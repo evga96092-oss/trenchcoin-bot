@@ -109,9 +109,44 @@ The widget answers only from fixed official knowledge. It does not generate free
 
 ## Deploy Notes
 
+### Railway
+
+Railway is the recommended first deploy target for this bot.
+
+1. Open https://railway.app/ and sign in with the GitHub account that owns `evga96092-oss/trenchcoin-bot`.
+2. Create a new project from GitHub and choose `evga96092-oss/trenchcoin-bot`.
+3. Let Railway deploy with the included `railway.json` settings:
+
+```text
+Start command: npm start
+Health check: /health
+Restart policy: Always
+```
+
+4. Add these service variables:
+
+```text
+TELEGRAM_BOT_TOKEN=your_live_bot_token
+TELEGRAM_ADMIN_IDS=your_telegram_user_id
+PUBLIC_BASE_URL=https://your-railway-domain.up.railway.app
+RATE_LIMIT_WINDOW_MS=10000
+RATE_LIMIT_MAX_COMMANDS=8
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+TRENCH_MINT=H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump
+MARKET_DATA_API_URL=
+```
+
+5. Add a Railway volume to the bot service if you want SQLite data to survive redeploys and restarts. Mount it anywhere, for example `/data`. The app automatically uses Railway's volume path when `DATABASE_PATH` is not set.
+6. Generate a Railway domain for the service.
+7. Update `PUBLIC_BASE_URL` to that Railway domain and redeploy.
+8. Visit `/health` on the Railway URL and confirm it returns `{ "ok": true }`.
+9. Test `/start`, `/buy`, `/price`, `/missions`, `/referral`, `/leaderboard`, and `/admin_stats` in Telegram.
+
+### General
+
 - Use Node 20+.
-- Set environment variables in the deploy platform.
-- Persist `DATABASE_PATH` on a durable volume if the platform supports it.
+- Set environment variables in the deploy platform, not in GitHub.
+- Do not commit `.env`.
 - Use long polling for the Telegram bot today. Webhooks can be added after launch.
 - Set `PUBLIC_BASE_URL` to the deployed backend URL.
 
