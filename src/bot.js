@@ -9,19 +9,26 @@ import {
   getMissionsForUser,
   getStats,
   getUser,
-  saveWallet,
+  deleteUserData,
   setActiveRaid
 } from "./db/index.js";
 import { getMarketData } from "./services/marketData.js";
 import { checkTrenchBalance, isLikelySolanaWallet } from "./services/holderVerification.js";
 import { helpText, officialLinksText, tokenDashboardText } from "./utils/format.js";
+import { linkedStatus, unlinkWallet } from "./services/identity.js";
 
 const commandHits = new Map();
 const botCommands = [
   { command: "start", description: "Open the Trenchcoin menu" },
   { command: "buy", description: "Official buy links" },
   { command: "price", description: "Token dashboard" },
-  { command: "verify", description: "Save wallet for holder verification" },
+  { command: "link", description: "Securely link a wallet on the website" },
+  { command: "verify", description: "Check linked verification status" },
+  { command: "balance", description: "Refresh linked $TRENCH balance" },
+  { command: "staking", description: "Staking status" },
+  { command: "points", description: "Your XP status" },
+  { command: "privacy", description: "Privacy and account controls" },
+  { command: "unlink", description: "Unlink your wallet" },
   { command: "missions", description: "Daily missions" },
   { command: "referral", description: "Your referral link" },
   { command: "leaderboard", description: "Top XP" },
@@ -76,7 +83,7 @@ function groupCommandHint(ctx) {
 }
 
 export function createBot() {
-  if (!config.telegramBotToken) return null;
+  if (!config.telegramBotToken || !config.telegramEnabled) return null;
 
   const bot = new Telegraf(config.telegramBotToken);
   bot.use(rateLimit);
@@ -112,24 +119,25 @@ export function createBot() {
     return ctx.reply(tokenDashboardText(marketData));
   });
 
-  bot.command("verify", async (ctx) => {
-    const wallet = ctx.message.text.split(/\s+/)[1];
-    if (!wallet) return ctx.reply(`Use: /verify <wallet>${groupCommandHint(ctx)}`);
-    if (!isLikelySolanaWallet(wallet)) return ctx.reply("That does not look like a valid Solana wallet address.");
-
-    saveWallet(ctx.from.id, wallet);
-    const verification = await checkTrenchBalance(wallet);
-    return ctx.reply(
-      [
-        "Wallet saved.",
-        `Wallet: ${wallet}`,
-        `Verification: ${verification.status}`,
-        "Holder role logic ready.",
-        "",
-        "Role tiers: Recruit, Holder, Raider, Veteran, Commander, General"
-      ].join("\n")
-    );
+  bot.command("link", (ctx) => ctx.reply(["Secure wallet linking requires signing a one-time message on the official site.", `${config.publicBaseUrl}/#wallet-link`, "Never share a seed phrase or private key."].join("\n")));
+  bot.command("verify", (ctx) => {
+    const link = linkedStatus(ctx.from.id);
+    return ctx.reply(link ? `Verified wallet: ${link.wallet_address.slice(0, 6)}…${link.wallet_address.slice(-6)}\nLast balance: ${link.last_balance_ui ?? "refresh required"} $TRENCH` : "No verified wallet is linked. Use /link.");
   });
+  bot.command("balance", async (ctx) => {
+    const link = linkedStatus(ctx.from.id);
+    if (!link) return ctx.reply("No verified wallet is linked. Use /link.");
+    const balance = await checkTrenchBalance(link.wallet_address);
+    return ctx.reply(`$TRENCH balance status: ${balance.status}\nBalance: ${balance.balanceUi ?? "unavailable"}\nMint: ${OFFICIAL.ca}\nCluster: ${balance.cluster || config.solanaCluster}`);
+  });
+  bot.command("staking", (ctx) => ctx.reply(`Staking Preview only. No production staking transactions are enabled. Devnet program reference: ${OFFICIAL.devnetStakingProgramId}`));
+  bot.command("points", (ctx) => {
+    const user = getUser(ctx.from.id);
+    return ctx.reply(`XP: ${user?.xp || 0}\nReferrals: ${user?.referral_count || 0}\nStatus: ${user?.holder_status || "Recruit"}`);
+  });
+  bot.command("privacy", (ctx) => ctx.reply("We store Telegram account identifiers, referral/XP records, and any wallet you explicitly verify. Use /unlink to disconnect a wallet. Use /delete_me to request deletion of account data; minimal fraud/audit records may be retained without direct identifiers."));
+  bot.command("unlink", (ctx) => ctx.reply(unlinkWallet(ctx.from.id) ? "Wallet unlinked. Historical XP/audit events remain for anti-abuse integrity." : "No linked wallet found."));
+  bot.command("delete_me", (ctx) => { deleteUserData(ctx.from.id); return ctx.reply("Account data deleted. Minimal de-identified audit records may remain for fraud prevention."); });
 
   const showMissions = (ctx) => {
     const missions = getMissionsForUser(ctx.from.id);
@@ -168,7 +176,7 @@ export function createBot() {
     const rows = getLeaderboard();
     if (!rows.length) return ctx.reply("Leaderboard is warming up.");
     const lines = rows.map((row, index) => {
-      const name = row.username ? `@${row.username}` : row.first_name || row.telegram_id;
+      const name = row.username ? `@${row.username}` : row.first_name || row.fallback_alias;
       return `${index + 1}. ${name} | ${row.xp} XP | ${row.holder_status}`;
     });
     return ctx.reply(["Trench Leaderboard", "", ...lines].join("\n"));
@@ -222,7 +230,8 @@ export function createBot() {
   bot.command("admin_setraid", (ctx) => {
     if (!requireAdmin(ctx)) return;
     const url = ctx.message.text.split(/\s+/)[1];
-    if (!url || !/^https?:\/\//.test(url)) return ctx.reply("Use: /admin_setraid <url>");
+    const allowed = ["https://x.com/TrenchcoinHQ", OFFICIAL.website, OFFICIAL.pumpFun];
+    if (!url || !allowed.some((prefix) => url.startsWith(prefix))) return ctx.reply("Raid URL must use an approved official Trenchcoin destination.");
     setActiveRaid(url, ctx.from.id);
     return ctx.reply(`Raid target updated: ${url}`);
   });

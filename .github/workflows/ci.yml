@@ -1,0 +1,25 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: npm run migrate
+        env:
+          DATABASE_PATH: ./data/ci.sqlite
+          TRENCH_MINT: H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump
+      - run: npm run config:check
+        env:
+          APP_ENV: test
+          TRENCH_MINT: H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump
+      - run: npm audit --omit=dev

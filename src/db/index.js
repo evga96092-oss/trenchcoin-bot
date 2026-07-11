@@ -64,6 +64,17 @@ export function addXp(telegramId, amount, reason) {
   db.prepare("INSERT INTO xp_events (telegram_id, amount, reason) VALUES (?, ?, ?)").run(id, points, reason);
 }
 
+export function addXpOnce(telegramId, amount, reason, eventKey) {
+  const tx = db.transaction(() => {
+    const inserted = db.prepare("INSERT OR IGNORE INTO audit_events (event_key, actor_type, actor_id, event_type, subject_id, details_json) VALUES (?, 'system', NULL, 'xp_award', ?, ?)")
+      .run(eventKey, String(telegramId), JSON.stringify({ amount: Number(amount), reason }));
+    if (!inserted.changes) return false;
+    addXp(telegramId, amount, reason);
+    return true;
+  });
+  return tx();
+}
+
 export function addReferral(referrerId, referredId, referralCode) {
   if (String(referrerId) === String(referredId)) return false;
   const exists = db.prepare("SELECT 1 FROM referrals WHERE referred_id = ?").get(String(referredId));
@@ -75,8 +86,18 @@ export function addReferral(referrerId, referredId, referralCode) {
   `).run(String(referrerId), String(referredId), referralCode);
 
   db.prepare("UPDATE users SET referral_count = referral_count + 1 WHERE telegram_id = ?").run(String(referrerId));
-  addXp(referrerId, 50, "Referral bonus");
-  addXp(referredId, 15, "Joined with referral");
+  return true;
+}
+
+export function activateReferralForUser(referredId) {
+  const referral = db.prepare("SELECT * FROM referrals WHERE referred_id=?").get(String(referredId));
+  if (!referral || referral.verified_at) return false;
+  const tx = db.transaction(() => {
+    db.prepare("UPDATE referrals SET verified_at=CURRENT_TIMESTAMP WHERE id=? AND verified_at IS NULL").run(referral.id);
+    addXpOnce(referral.referrer_id, 50, "Verified referral bonus", `referral:referrer:${referredId}`);
+    addXpOnce(referredId, 15, "Joined with verified referral", `referral:referred:${referredId}`);
+  });
+  tx();
   return true;
 }
 
@@ -86,7 +107,6 @@ export function saveWallet(telegramId, walletAddress) {
     VALUES (?, ?, 'pending')
     ON CONFLICT(telegram_id, wallet_address) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
   `).run(String(telegramId), walletAddress);
-  addXp(telegramId, 30, "Wallet saved");
 }
 
 export function getUser(telegramId) {
@@ -110,11 +130,22 @@ export function getMissionsForUser(telegramId) {
 
 export function getLeaderboard(limit = 10) {
   return db.prepare(`
-    SELECT telegram_id, username, first_name, xp, referral_count, holder_status
+    SELECT username, first_name, xp, referral_count, holder_status,
+      'Trencher-' || substr(referral_code, 1, 6) AS fallback_alias
     FROM users
     ORDER BY xp DESC, referral_count DESC
     LIMIT ?
   `).all(limit);
+}
+
+export function deleteUserData(telegramId) {
+  const id = String(telegramId);
+  const tx = db.transaction(() => {
+    db.prepare("UPDATE wallet_links SET telegram_id=NULL, unlinked_at=CURRENT_TIMESTAMP WHERE telegram_id=?").run(id);
+    db.prepare("DELETE FROM users WHERE telegram_id=?").run(id);
+    db.prepare("INSERT INTO audit_events (actor_type, actor_id, event_type, subject_id, details_json) VALUES ('user', NULL, 'privacy_deletion', NULL, '{}')").run();
+  });
+  tx();
 }
 
 export function getActiveRaid() {

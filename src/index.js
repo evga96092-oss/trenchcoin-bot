@@ -1,11 +1,12 @@
-import { config } from "./config.js";
+import { config, assertValidConfig } from "./config.js";
 import { createBot, registerBotCommands } from "./bot.js";
 import { createServer } from "./web/server.js";
 
+assertValidConfig();
 const app = createServer();
 let currentPort = config.port;
 let server = app.listen(currentPort, () => {
-  console.log(`Trenchcoin backend listening on http://localhost:${currentPort}`);
+  console.log(JSON.stringify({ level: "info", event: "server_started", port: currentPort, appEnv: config.appEnv, cluster: config.solanaCluster, staking: "preview" }));
 });
 
 server.on("error", (error) => {
