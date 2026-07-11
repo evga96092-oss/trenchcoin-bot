@@ -1,6 +1,6 @@
-# Trenchcoin Telegram + Website Bot
+# Trenchcoin Unified Website + Telegram Backend
 
-Launch-focused bot/backend for `$TRENCH`.
+Launch-focused bot/backend for `$TRENCH`. Wallet ownership is verified through a short-lived Ed25519 signed challenge; balances are read from the canonical mint on the configured Solana cluster. Staking remains an explicitly labeled preview.
 
 ## What is included
 
@@ -9,7 +9,10 @@ Launch-focused bot/backend for `$TRENCH`.
 - SQLite tables for users, wallets, missions, user missions, referrals, raids, XP events, and settings
 - Referral codes and XP tracking
 - Daily mission foundation
-- Holder wallet save and verification interface
+- Signed, replay-resistant Solana wallet verification
+- Live canonical-mint SPL balance lookup
+- Privacy-safe wallet/Telegram association, unlinking and deletion controls
+- Idempotent XP audit events and privacy-safe leaderboards
 - Website chatbot widget with fixed official knowledge
 - API endpoints for links, widget answers, token dashboard, health, and leaderboard
 
@@ -63,7 +66,14 @@ The backend defaults to `http://localhost:3000`.
 - `/start` - branded home menu
 - `/buy` - official buy and social links
 - `/price` - token dashboard
-- `/verify <wallet>` - save wallet and prepare holder verification
+- `/link` - open the secure website signature flow
+- `/verify` - show linked verification status
+- `/balance` - refresh the linked `$TRENCH` balance
+- `/staking` - accurate preview/devnet status
+- `/points` - personal XP/referral summary
+- `/privacy` - data-use and account-control summary
+- `/unlink` - unlink the verified wallet
+- `/delete_me` - delete account data, subject to de-identified anti-fraud audit retention
 - `/missions` - daily mission list
 - `/referral` - personal referral link/code
 - `/leaderboard` - top users by XP
@@ -109,44 +119,9 @@ The widget answers only from fixed official knowledge. It does not generate free
 
 ## Deploy Notes
 
-### Railway
-
-Railway is the recommended first deploy target for this bot.
-
-1. Open https://railway.app/ and sign in with the GitHub account that owns `evga96092-oss/trenchcoin-bot`.
-2. Create a new project from GitHub and choose `evga96092-oss/trenchcoin-bot`.
-3. Let Railway deploy with the included `railway.json` settings:
-
-```text
-Start command: npm start
-Health check: /health
-Restart policy: Always
-```
-
-4. Add these service variables:
-
-```text
-TELEGRAM_BOT_TOKEN=your_live_bot_token
-TELEGRAM_ADMIN_IDS=your_telegram_user_id
-PUBLIC_BASE_URL=https://your-railway-domain.up.railway.app
-RATE_LIMIT_WINDOW_MS=10000
-RATE_LIMIT_MAX_COMMANDS=8
-SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
-TRENCH_MINT=H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump
-MARKET_DATA_API_URL=
-```
-
-5. Add a Railway volume to the bot service if you want SQLite data to survive redeploys and restarts. Mount it anywhere, for example `/data`. The app automatically uses Railway's volume path when `DATABASE_PATH` is not set.
-6. Generate a Railway domain for the service.
-7. Update `PUBLIC_BASE_URL` to that Railway domain and redeploy.
-8. Visit `/health` on the Railway URL and confirm it returns `{ "ok": true }`.
-9. Test `/start`, `/buy`, `/price`, `/missions`, `/referral`, `/leaderboard`, and `/admin_stats` in Telegram.
-
-### General
-
 - Use Node 20+.
-- Set environment variables in the deploy platform, not in GitHub.
-- Do not commit `.env`.
+- Set environment variables in the deploy platform.
+- Persist `DATABASE_PATH` on a durable volume if the platform supports it.
 - Use long polling for the Telegram bot today. Webhooks can be added after launch.
 - Set `PUBLIC_BASE_URL` to the deployed backend URL.
 
@@ -165,14 +140,18 @@ MARKET_DATA_API_URL=
 - Admin commands reject non-admin users.
 - Website preview opens and widget options return official answers.
 
-## TODO For Live Integrations
+## Production activation status
 
-- Add live Solana SPL token balance check for holder verification.
+- Wallet signature and live SPL balance verification are implemented.
 - Add market data provider and map fields to price, market cap, liquidity, volume, and holders.
 - Add chat opt-in tracking before enabling real broadcasts.
 - Add mission completion review/admin approval flow.
 - Add webhook deployment mode if long polling becomes inconvenient.
 - Add production backup plan for SQLite data.
+
+Staking is not production-ready. The repository contains a devnet program ID reference but no staking program source, IDL, authority specification, instruction builder, audit, or end-to-end tests. Do not enable mainnet staking controls until those artifacts are supplied and independently verified.
+
+See [SPECIFICATION.md](SPECIFICATION.md) and [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
 
 ## Safety Rules
 

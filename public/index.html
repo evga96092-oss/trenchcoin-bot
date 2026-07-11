@@ -30,13 +30,38 @@
         padding: 2px 5px;
         border-radius: 4px;
       }
+      .card { background: white; border: 1px solid #d9d9cf; border-radius: 16px; padding: 22px; margin: 18px 0; box-shadow: 0 10px 30px rgba(0,0,0,.05); }
+      .status { display: inline-block; padding: 4px 9px; border-radius: 999px; font-weight: 700; font-size: 12px; background: #fff0bd; }
+      button { background:#161616; color:white; border:0; border-radius:9px; padding:11px 15px; font-weight:700; cursor:pointer; }
+      button:disabled { opacity:.45; cursor:not-allowed; }
+      input { width:100%; box-sizing:border-box; padding:11px; border:1px solid #bdbdb3; border-radius:8px; margin:8px 0 12px; }
+      .ca { overflow-wrap:anywhere; }
+      #wallet-result { min-height: 24px; }
     </style>
   </head>
   <body>
     <main>
       <h1>Trenchcoin widget preview</h1>
       <p>Use the <code>$TRENCH</code> button in the bottom-right corner to test the fixed-knowledge website bot.</p>
+      <section class="card" id="wallet-link" aria-labelledby="wallet-heading">
+        <span class="status">LIVE: SIGNATURE + BALANCE VERIFICATION</span>
+        <h2 id="wallet-heading">Verify your `$TRENCH` wallet</h2>
+        <p>Sign a one-time message to prove ownership. This does not create a transaction, request a seed phrase, or spend funds.</p>
+        <p class="ca"><strong>Official mint:</strong> H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump</p>
+        <label for="wallet-address">Solana wallet address</label>
+        <input id="wallet-address" autocomplete="off" spellcheck="false" placeholder="Paste address or connect Phantom">
+        <button id="connect-wallet" type="button">Connect Phantom</button>
+        <button id="verify-wallet" type="button">Sign and verify</button>
+        <p id="wallet-result" role="status" aria-live="polite"></p>
+      </section>
+      <section class="card" aria-labelledby="staking-heading">
+        <span class="status">PREVIEW — NOT MAINNET STAKING</span>
+        <h2 id="staking-heading">Staking Preview</h2>
+        <p>No production staking transactions, APY, locking or reward claims are enabled. The recorded program reference is devnet-only and requires source, IDL, tests and independent review before activation.</p>
+      </section>
     </main>
+    <script src="/config.js"></script>
     <script src="/widget.js"></script>
+    <script src="/wallet-link.js"></script>
   </body>
 </html>

@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS referrals (
   referrer_id TEXT NOT NULL,
   referred_id TEXT NOT NULL UNIQUE,
   referral_code TEXT NOT NULL,
+  verified_at TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (referrer_id) REFERENCES users(telegram_id) ON DELETE CASCADE,
   FOREIGN KEY (referred_id) REFERENCES users(telegram_id) ON DELETE CASCADE
@@ -81,4 +82,40 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS wallet_challenges (
+  id TEXT PRIMARY KEY,
+  wallet_address TEXT NOT NULL,
+  telegram_id TEXT,
+  challenge_text TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS wallet_links (
+  wallet_address TEXT PRIMARY KEY,
+  telegram_id TEXT UNIQUE,
+  verified_at TEXT NOT NULL,
+  last_balance_raw TEXT,
+  last_balance_ui TEXT,
+  last_balance_slot INTEGER,
+  leaderboard_opt_in INTEGER NOT NULL DEFAULT 1,
+  unlinked_at TEXT,
+  FOREIGN KEY (telegram_id) REFERENCES users(telegram_id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS audit_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_key TEXT UNIQUE,
+  actor_type TEXT NOT NULL,
+  actor_id TEXT,
+  event_type TEXT NOT NULL,
+  subject_id TEXT,
+  details_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_challenges_wallet ON wallet_challenges(wallet_address);
+CREATE INDEX IF NOT EXISTS idx_audit_subject ON audit_events(subject_id, event_type);
 `;
