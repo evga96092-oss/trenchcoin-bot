@@ -5,6 +5,20 @@
   const verify = document.querySelector("#verify-wallet");
   let provider = null;
   const apiBase = (window.TRENCH_CONFIG?.backendUrl || "").replace(/\/$/, "");
+
+  const findPhantomProvider = () => {
+    if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
+    if (window.solana?.isPhantom) return window.solana;
+    return null;
+  };
+
+  const walletErrorMessage = (error) => {
+    if (error?.code === 4001) return "Wallet connection was cancelled in Phantom.";
+    if (error?.message) return error.message;
+    if (typeof error === "string") return error;
+    return "Unable to connect Phantom. Make sure the Phantom extension is installed, unlocked, and allowed on this site.";
+  };
+
   if (window.TRENCH_CONFIG?.appEnv !== "production") {
     const banner = document.createElement("p");
     banner.className = "status";
@@ -19,19 +33,19 @@
 
   connect.addEventListener("click", async () => {
     try {
-      provider = window.phantom?.solana;
-      if (!provider?.isPhantom) throw new Error("Phantom wallet extension was not detected.");
+      provider = findPhantomProvider();
+      if (!provider) throw new Error("Phantom wallet extension was not detected. Install or unlock Phantom, then refresh this page.");
       const response = await provider.connect();
       addressInput.value = response.publicKey.toString();
       setResult("Wallet connected. Sign the verification message when ready.");
-    } catch (error) { setResult(error.message, true); }
+    } catch (error) { setResult(walletErrorMessage(error), true); }
   });
 
   verify.addEventListener("click", async () => {
     verify.disabled = true;
     try {
-      provider = provider || window.phantom?.solana;
-      if (!provider?.isPhantom) throw new Error("Connect Phantom before signing.");
+      provider = provider || findPhantomProvider();
+      if (!provider) throw new Error("Connect Phantom before signing.");
       const walletAddress = addressInput.value.trim();
       if (provider.publicKey?.toString() !== walletAddress) throw new Error("Connected wallet does not match the entered address.");
       setResult("Creating a short-lived challenge…");
@@ -44,7 +58,7 @@
       const payload = await verifyResponse.json();
       if (!verifyResponse.ok) throw new Error(payload.error || "Verification failed.");
       setResult(`Verified. Live balance: ${payload.balance?.balanceUi ?? "unavailable"} $TRENCH (${payload.balance?.status || "unknown"}).`);
-    } catch (error) { setResult(error.message, true); }
+    } catch (error) { setResult(walletErrorMessage(error), true); }
     finally { verify.disabled = false; }
   });
 
