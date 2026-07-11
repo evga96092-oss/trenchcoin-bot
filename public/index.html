@@ -1,67 +1,995 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Trenchcoin Bot Widget</title>
-    <link rel="stylesheet" href="/widget.css">
-    <style>
-      body {
-        min-height: 100vh;
-        margin: 0;
-        display: grid;
-        place-items: center;
-        background: #f6f6f2;
-        color: #161616;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trench Terminal | $TRENCH</title>
+  <meta name="description" content="Trench Terminal checks $TRENCH holder status, drop eligibility, and official project transparency links.">
+  <style>
+    :root {
+      --bg: #080a08;
+      --ink: #f5f2e9;
+      --muted: #adb4a7;
+      --panel: #121510;
+      --panel-2: #181c15;
+      --line: #30372c;
+      --green: #4cff72;
+      --teal: #41d9c3;
+      --amber: #d7b169;
+      --red: #ff725e;
+      --shadow: rgba(0, 0, 0, 0.34);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 6%, rgba(76, 255, 114, 0.14), transparent 29rem),
+        radial-gradient(circle at 86% 4%, rgba(65, 217, 195, 0.10), transparent 24rem),
+        linear-gradient(180deg, #080a08 0%, #10130f 52%, #080a08 100%);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.45;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 44px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 14px 0 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand img {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      border: 1px solid rgba(245, 242, 233, 0.16);
+      box-shadow: 0 14px 34px var(--shadow);
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 19px;
+    }
+
+    .brand span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .nav-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 15px;
+      border: 1px solid rgba(245, 242, 233, 0.14);
+      border-radius: 7px;
+      background: rgba(245, 242, 233, 0.06);
+      color: var(--ink);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .btn.primary {
+      border-color: rgba(76, 255, 114, 0.64);
+      background: var(--green);
+      color: #061008;
+    }
+
+    .btn.warn {
+      border-color: rgba(215, 177, 105, 0.55);
+      color: var(--amber);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 0.96fr 1.04fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .panel {
+      border: 1px solid rgba(245, 242, 233, 0.10);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(245, 242, 233, 0.064), rgba(245, 242, 233, 0.026));
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+    }
+
+    .hero-card {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 390px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--green);
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    .pulse {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 18px rgba(76, 255, 114, 0.8);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 16px;
+      font-size: clamp(44px, 7vw, 86px);
+      line-height: 0.92;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      color: #d9d6cd;
+      font-size: clamp(17px, 2vw, 21px);
+      max-width: 680px;
+    }
+
+    .contract {
+      display: grid;
+      gap: 10px;
+      margin-top: 26px;
+    }
+
+    .mono-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 14px;
+      border: 1px solid rgba(245, 242, 233, 0.12);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.20);
+      color: var(--muted);
+      font-family: Consolas, "Courier New", monospace;
+      overflow-wrap: anywhere;
+    }
+
+    .copy {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 0 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(76, 255, 114, 0.48);
+      background: rgba(76, 255, 114, 0.12);
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .checker {
+      padding: 22px;
+    }
+
+    .checker-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .checker-head h2 {
+      margin-bottom: 6px;
+      font-size: 28px;
+    }
+
+    .checker-head p {
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+
+    .wallet-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    input {
+      width: 100%;
+      min-height: 46px;
+      border-radius: 7px;
+      border: 1px solid rgba(245, 242, 233, 0.13);
+      background: rgba(0, 0, 0, 0.22);
+      color: var(--ink);
+      padding: 0 13px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: rgba(76, 255, 114, 0.72);
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .stat {
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(245, 242, 233, 0.10);
+      background: rgba(0, 0, 0, 0.18);
+      min-height: 96px;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 22px;
+      overflow-wrap: anywhere;
+    }
+
+    .ok {
+      color: var(--green);
+    }
+
+    .pending {
+      color: var(--amber);
+    }
+
+    .bad {
+      color: var(--red);
+    }
+
+    .fineprint {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .sections {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .info-card {
+      padding: 20px;
+      min-height: 260px;
+    }
+
+    .info-card h3 {
+      margin-bottom: 12px;
+      font-size: 21px;
+    }
+
+    .info-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+
+    .info-card li {
+      margin: 8px 0;
+    }
+
+    .report {
+      margin-top: 18px;
+      padding: 22px;
+    }
+
+    .stake-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 0.82fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .stake-panel {
+      padding: 18px;
+      border-radius: 8px;
+      border: 1px solid rgba(245, 242, 233, 0.10);
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    .stake-panel h3 {
+      margin-bottom: 8px;
+      font-size: 22px;
+    }
+
+    .stake-copy {
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .stake-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .stake-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .stake-actions .btn {
+      width: 100%;
+    }
+
+    .stake-actions .btn[disabled] {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    .stake-alert {
+      border: 1px solid rgba(215, 177, 105, 0.44);
+      border-radius: 8px;
+      background: rgba(215, 177, 105, 0.10);
+      color: #f4d59e;
+      padding: 12px 13px;
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+
+    .bot-log {
+      display: grid;
+      gap: 10px;
+      max-height: 330px;
+      overflow: auto;
+    }
+
+    .bot-msg {
+      padding: 11px 12px;
+      border-radius: 8px;
+      background: rgba(245, 242, 233, 0.07);
+      border: 1px solid rgba(245, 242, 233, 0.09);
+      color: #ddd8cb;
+    }
+
+    .bot-msg.user {
+      background: rgba(76, 255, 114, 0.10);
+      border-color: rgba(76, 255, 114, 0.18);
+      color: var(--ink);
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .quick-grid button {
+      min-height: 40px;
+      border: 1px solid rgba(245, 242, 233, 0.12);
+      border-radius: 7px;
+      background: rgba(245, 242, 233, 0.06);
+      color: var(--ink);
+      font-weight: 800;
+      text-align: left;
+      padding: 8px 10px;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(76, 255, 114, 0.10);
+      color: var(--green);
+      border: 1px solid rgba(76, 255, 114, 0.28);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      max-width: min(420px, calc(100% - 36px));
+      padding: 13px 15px;
+      border-radius: 8px;
+      background: #1b2118;
+      border: 1px solid rgba(76, 255, 114, 0.35);
+      color: var(--ink);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: 160ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 900px) {
+      .topbar,
+      .checker-head {
+        align-items: stretch;
+        flex-direction: column;
       }
 
-      main {
-        width: min(760px, calc(100vw - 32px));
+      .nav-actions {
+        justify-content: flex-start;
       }
 
-      h1 {
-        font-size: 32px;
-        letter-spacing: 0;
+      .hero,
+      .sections,
+      .stake-layout,
+      .report-grid {
+        grid-template-columns: 1fr;
       }
 
-      code {
-        background: #e8e8df;
-        padding: 2px 5px;
-        border-radius: 4px;
+      .wallet-row,
+      .status-grid,
+      .stake-mini-grid,
+      .stake-actions,
+      .quick-grid {
+        grid-template-columns: 1fr;
       }
-      .card { background: white; border: 1px solid #d9d9cf; border-radius: 16px; padding: 22px; margin: 18px 0; box-shadow: 0 10px 30px rgba(0,0,0,.05); }
-      .status { display: inline-block; padding: 4px 9px; border-radius: 999px; font-weight: 700; font-size: 12px; background: #fff0bd; }
-      button { background:#161616; color:white; border:0; border-radius:9px; padding:11px 15px; font-weight:700; cursor:pointer; }
-      button:disabled { opacity:.45; cursor:not-allowed; }
-      input { width:100%; box-sizing:border-box; padding:11px; border:1px solid #bdbdb3; border-radius:8px; margin:8px 0 12px; }
-      .ca { overflow-wrap:anywhere; }
-      #wallet-result { min-height: 24px; }
-    </style>
-  </head>
-  <body>
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#">
+        <img src="trenchcoin-logo.png" alt="Trenchcoin logo">
+        <div>
+          <strong>Trench Terminal</strong>
+          <span>$TRENCH holder utility v1</span>
+        </div>
+      </a>
+      <div class="nav-actions">
+        <a class="btn" href="https://x.com/TrenchcoinHQ">X</a>
+        <a class="btn" href="https://t.me/+_ct7Uyx2-C1kYzYx">Telegram</a>
+        <a class="btn" href="#staking">Staking</a>
+        <a class="btn" href="#roadmap">Roadmap</a>
+        <a class="btn primary" href="https://pump.fun/coin/H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump">Buy $TRENCH</a>
+      </div>
+    </header>
+
     <main>
-      <h1>Trenchcoin widget preview</h1>
-      <p>Use the <code>$TRENCH</code> button in the bottom-right corner to test the fixed-knowledge website bot.</p>
-      <section class="card" id="wallet-link" aria-labelledby="wallet-heading">
-        <span class="status">LIVE: SIGNATURE + BALANCE VERIFICATION</span>
-        <h2 id="wallet-heading">Verify your `$TRENCH` wallet</h2>
-        <p>Sign a one-time message to prove ownership. This does not create a transaction, request a seed phrase, or spend funds.</p>
-        <p class="ca"><strong>Official mint:</strong> H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump</p>
-        <label for="wallet-address">Solana wallet address</label>
-        <input id="wallet-address" autocomplete="off" spellcheck="false" placeholder="Paste address or connect Phantom">
-        <button id="connect-wallet" type="button">Connect Phantom</button>
-        <button id="verify-wallet" type="button">Sign and verify</button>
-        <p id="wallet-result" role="status" aria-live="polite"></p>
+      <section class="hero">
+        <div class="panel hero-card">
+          <div>
+            <div class="eyebrow"><span class="pulse"></span> Live utility layer</div>
+            <h1>Check your trench status.</h1>
+            <p class="lead">Connect a Solana wallet or paste a public wallet address to check $TRENCH holdings, drop tier, and early eligibility signals.</p>
+          </div>
+          <div class="contract">
+            <span class="tag">Official CA</span>
+            <div class="mono-box">
+              <span id="mintText">H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump</span>
+              <button class="copy" type="button" data-copy="H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel checker">
+          <div class="checker-head">
+            <div>
+              <h2>Holder Checker</h2>
+              <p>Reads public Solana token balances. It does not spend funds or request a transaction.</p>
+            </div>
+            <button id="connectBtn" class="btn primary" type="button">Connect Wallet</button>
+          </div>
+
+          <div class="wallet-row">
+            <input id="walletInput" autocomplete="off" spellcheck="false" placeholder="Paste public wallet address">
+            <button id="checkBtn" class="btn" type="button">Check</button>
+          </div>
+
+          <div class="status-grid">
+            <div class="stat">
+              <span>Wallet</span>
+              <strong id="walletStatus">Not checked</strong>
+            </div>
+            <div class="stat">
+              <span>$TRENCH Balance</span>
+              <strong id="balanceStatus">--</strong>
+            </div>
+            <div class="stat">
+              <span>Drop Tier</span>
+              <strong id="tierStatus">--</strong>
+            </div>
+            <div class="stat">
+              <span>Eligibility</span>
+              <strong id="eligibilityStatus">--</strong>
+            </div>
+          </div>
+
+          <p id="checkerNote" class="fineprint">Minimum for future Trench Drops: 100,000 $TRENCH. Holding-time and sell-cooldown checks require snapshots in the next version.</p>
+        </div>
       </section>
-      <section class="card" aria-labelledby="staking-heading">
-        <span class="status">PREVIEW — NOT MAINNET STAKING</span>
-        <h2 id="staking-heading">Staking Preview</h2>
-        <p>No production staking transactions, APY, locking or reward claims are enabled. The recorded program reference is devnet-only and requires source, IDL, tests and independent review before activation.</p>
+
+      <section class="sections">
+        <article class="panel info-card">
+          <h3>Trench Drops</h3>
+          <ul>
+            <li>Proposed share: 50% of creator rewards.</li>
+            <li>First community drop unlocks at 100K market cap.</li>
+            <li>Creator wallet excluded from drops.</li>
+            <li>Minimum target: 100,000 $TRENCH.</li>
+            <li>First-minute buyers require 7 days before eligibility.</li>
+          </ul>
+        </article>
+
+        <article class="panel info-card">
+          <h3>Anti-Bundle Rules</h3>
+          <ul>
+            <li>No private presale.</li>
+            <li>No hidden team wallets.</li>
+            <li>Suspicious wallet clusters can be excluded.</li>
+            <li>Drop history should be posted publicly.</li>
+          </ul>
+        </article>
+
+        <article class="panel info-card">
+          <h3>Trench AI</h3>
+          <ul>
+            <li>Meme captions and launch posts.</li>
+            <li>Daily Trench Report drafts.</li>
+            <li>Chart roast and community content tools.</li>
+            <li>Holder-gated tools after wallet verification.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section id="staking" class="panel report">
+        <div class="checker-head">
+          <div>
+            <span class="tag">Stake Assistant</span>
+            <h2 style="margin-top: 12px;">$TRENCH staking console</h2>
+            <p class="stake-copy">Connect Phantom or paste a wallet to check balance, estimate a stake, and get staking help without waiting on chat.</p>
+          </div>
+          <a class="btn primary" href="https://t.me/+_ct7Uyx2-C1kYzYx">Ask in Telegram</a>
+        </div>
+
+        <div class="stake-layout">
+          <div class="stake-panel">
+            <div class="stake-alert" id="stakingMode">Wallet checks are live. Token-locking turns on after the Solana staking program address is configured.</div>
+            <h3>Stake setup</h3>
+            <p class="stake-copy">Use this as the live staking hub today: holders can check status, pick an amount, and follow the bot flow while the staking program is finalized.</p>
+
+            <div class="stake-mini-grid">
+              <div class="stat">
+                <span>Connected / checked wallet</span>
+                <strong id="stakeWalletStatus">Not checked</strong>
+              </div>
+              <div class="stat">
+                <span>Available $TRENCH</span>
+                <strong id="stakeBalanceStatus">--</strong>
+              </div>
+              <div class="stat">
+                <span>Planned stake</span>
+                <strong id="stakeAmountStatus">--</strong>
+              </div>
+              <div class="stat">
+                <span>Reward lane</span>
+                <strong id="stakeLaneStatus">Check wallet</strong>
+              </div>
+            </div>
+
+            <input id="stakeAmountInput" inputmode="decimal" autocomplete="off" placeholder="Amount of $TRENCH to stake">
+            <div class="stake-actions">
+              <button id="estimateStakeBtn" class="btn" type="button">Estimate</button>
+              <button id="joinStakeBtn" class="btn warn" type="button">Join Queue</button>
+              <button id="stakeNowBtn" class="btn primary" type="button" disabled>Stake Live</button>
+            </div>
+            <p id="stakeNote" class="fineprint">Real staking transactions require a deployed Solana staking program. Until then, this console works as holder verification, stake intent, and support automation.</p>
+          </div>
+
+          <div class="stake-panel">
+            <h3>Staking Bot</h3>
+            <p class="stake-copy">Fast answers for new holders.</p>
+            <div id="stakeBotLog" class="bot-log">
+              <div class="bot-msg">Welcome to the staking desk. Check your wallet, choose an amount, then follow the live staking updates in Telegram.</div>
+            </div>
+            <div class="quick-grid">
+              <button type="button" data-stake-answer="how">How staking works</button>
+              <button type="button" data-stake-answer="live">Is staking live?</button>
+              <button type="button" data-stake-answer="rewards">Rewards</button>
+              <button type="button" data-stake-answer="referrals">Referrals</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="roadmap" class="panel report">
+        <h2>Roadmap</h2>
+        <div class="report-grid">
+          <div class="stat">
+            <span>Phase 1</span>
+            <strong>Launch + Labels</strong>
+          </div>
+          <div class="stat">
+            <span>Phase 2</span>
+            <strong>PissBot Setup</strong>
+          </div>
+          <div class="stat">
+            <span>Phase 3</span>
+            <strong>Trench Drops</strong>
+          </div>
+          <div class="stat">
+            <span>Phase 4</span>
+            <strong>Trench AI</strong>
+          </div>
+        </div>
+        <div class="sections" style="margin-top: 16px;">
+          <article class="panel info-card">
+            <h3>Now</h3>
+            <ul>
+              <li>Keep the official site and CA pinned.</li>
+              <li>Keep the X and Telegram links pinned.</li>
+              <li>Label creator, reward, and PissBot wallets.</li>
+              <li>Post transparency updates from official channels.</li>
+              <li>Build organically without fake airdrop bait or paid shill spam.</li>
+            </ul>
+          </article>
+          <article class="panel info-card">
+            <h3>Next</h3>
+            <ul>
+              <li>Configure PissBot with $TRENCH.</li>
+              <li>Track creator rewards and reward wallet funding.</li>
+              <li>Publish the first Trench Report.</li>
+              <li>Begin holder snapshot rules before the first 100K MC drop.</li>
+            </ul>
+          </article>
+          <article class="panel info-card">
+            <h3>Later</h3>
+            <ul>
+              <li>Automate holder eligibility checks.</li>
+              <li>Add public drop history and receipts.</li>
+              <li>Launch AI meme and report tools.</li>
+              <li>Expand Trench Terminal into a full holder dashboard.</li>
+            </ul>
+          </article>
+        </div>
+        <p class="fineprint">For the trenches, by the trenches. #GODBLESSTHETRENCHES</p>
+      </section>
+
+      <section class="panel report">
+        <h2>Transparency Report #1</h2>
+        <div class="report-grid">
+          <div class="stat">
+            <span>Launch Buy</span>
+            <strong>0.3 SOL</strong>
+          </div>
+          <div class="stat">
+            <span>Creator Wallet</span>
+            <strong>GWvM...QDaH</strong>
+          </div>
+          <div class="stat">
+            <span>Reward Wallet</span>
+            <strong>DZck...E7vw</strong>
+          </div>
+          <div class="stat">
+            <span>Drop Status</span>
+            <strong class="pending">First drop at 100K MC</strong>
+          </div>
+        </div>
+        <p class="fineprint">First community drop target: 100K market cap. Creator wallet: GWvMGxwG2SjcSuQpWhxzqqQng1vN66FaaEeNt5imQDaH. Trench Drop Reward Wallet: DZcknAeCgzUgLDr9cM3XWdMs8Fksqu2ksXnPkoQpE7vw. PissBot Claim Wallet: FbD24iCY9NU6N2FqEnPWWLRdUnqtbwQUN2W8hFoQXQ1b. Automated snapshots, drop history, and reward selection are planned next.</p>
       </section>
     </main>
-    <script src="/config.js"></script>
-    <script src="/widget.js"></script>
-    <script src="/wallet-link.js"></script>
-  </body>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module">
+    import { Connection, PublicKey } from "https://esm.sh/@solana/web3.js@1.98.4";
+
+    const MINT = "H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump";
+    const RPC_ENDPOINTS = [
+      "https://api.mainnet-beta.solana.com",
+      "https://solana-rpc.publicnode.com"
+    ];
+    const STAKING_PROGRAM_ID = "";
+
+    const tiers = [
+      { name: "Trench Legend", min: 5_000_000, weight: "10 entries max" },
+      { name: "Commander", min: 1_000_000, weight: "6 entries" },
+      { name: "Soldier", min: 500_000, weight: "3 entries" },
+      { name: "Scout", min: 100_000, weight: "1 entry" }
+    ];
+
+    const state = {
+      endpointIndex: 0,
+      decimals: null
+    };
+
+    const walletInput = document.querySelector("#walletInput");
+    const connectBtn = document.querySelector("#connectBtn");
+    const checkBtn = document.querySelector("#checkBtn");
+    const walletStatus = document.querySelector("#walletStatus");
+    const balanceStatus = document.querySelector("#balanceStatus");
+    const tierStatus = document.querySelector("#tierStatus");
+    const eligibilityStatus = document.querySelector("#eligibilityStatus");
+    const checkerNote = document.querySelector("#checkerNote");
+    const toast = document.querySelector("#toast");
+    const stakingMode = document.querySelector("#stakingMode");
+    const stakeWalletStatus = document.querySelector("#stakeWalletStatus");
+    const stakeBalanceStatus = document.querySelector("#stakeBalanceStatus");
+    const stakeAmountStatus = document.querySelector("#stakeAmountStatus");
+    const stakeLaneStatus = document.querySelector("#stakeLaneStatus");
+    const stakeAmountInput = document.querySelector("#stakeAmountInput");
+    const estimateStakeBtn = document.querySelector("#estimateStakeBtn");
+    const joinStakeBtn = document.querySelector("#joinStakeBtn");
+    const stakeNowBtn = document.querySelector("#stakeNowBtn");
+    const stakeNote = document.querySelector("#stakeNote");
+    const stakeBotLog = document.querySelector("#stakeBotLog");
+
+    const stakeAnswers = {
+      how: "Staking means locking $TRENCH in a Solana staking program so rewards can be tracked by the contract instead of by manual chat claims.",
+      live: STAKING_PROGRAM_ID ? "Staking program is configured. Connect your wallet and use the staking flow." : "Wallet checks are live today. Token-locking is disabled until the Solana staking program address is deployed and configured.",
+      rewards: "Rewards can be funded into the staking program and distributed based on staked balance and duration. Start with a small reward pool and test first.",
+      referrals: "Referral tracking can sit next to staking: holders bring people into Telegram/X, the site records intent, and the team can reward verified activity."
+    };
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function setChecking(message = "Checking...") {
+      walletStatus.textContent = message;
+      balanceStatus.textContent = "--";
+      tierStatus.textContent = "--";
+      eligibilityStatus.textContent = "--";
+      eligibilityStatus.className = "";
+    }
+
+    function compactAddress(address) {
+      return `${address.slice(0, 4)}...${address.slice(-4)}`;
+    }
+
+    function connection() {
+      return new Connection(RPC_ENDPOINTS[state.endpointIndex], "confirmed");
+    }
+
+    async function getMintDecimals() {
+      if (state.decimals !== null) return state.decimals;
+      const account = await connection().getParsedAccountInfo(new PublicKey(MINT));
+      const parsed = account.value?.data?.parsed;
+      state.decimals = parsed?.info?.decimals ?? 6;
+      return state.decimals;
+    }
+
+    async function fetchTrenchBalance(walletAddress) {
+      const owner = new PublicKey(walletAddress);
+      const mint = new PublicKey(MINT);
+      const decimals = await getMintDecimals();
+      const response = await connection().getParsedTokenAccountsByOwner(owner, { mint });
+      let rawTotal = 0n;
+
+      for (const account of response.value) {
+        const amount = account.account.data.parsed.info.tokenAmount.amount;
+        rawTotal += BigInt(amount);
+      }
+
+      return Number(rawTotal) / 10 ** decimals;
+    }
+
+    function getTier(balance) {
+      return tiers.find((tier) => balance >= tier.min) ?? null;
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat("en-US", {
+        maximumFractionDigits: value >= 1 ? 2 : 6
+      }).format(value);
+    }
+
+    function updateStakePanel(address, balance) {
+      const tier = getTier(balance);
+      stakeWalletStatus.textContent = compactAddress(address);
+      stakeBalanceStatus.textContent = `${formatNumber(balance)} $TRENCH`;
+      stakeLaneStatus.textContent = tier ? tier.name : "Need 100K+";
+      stakeLaneStatus.className = tier ? "ok" : "pending";
+
+      if (STAKING_PROGRAM_ID) {
+        stakingMode.textContent = "Staking program configured. Confirm every wallet transaction before signing.";
+        stakeNowBtn.disabled = false;
+      } else {
+        stakingMode.textContent = "Wallet checks are live. Token-locking turns on after the Solana staking program address is configured.";
+        stakeNowBtn.disabled = true;
+      }
+    }
+
+    function addStakeBot(kind, message) {
+      const bubble = document.createElement("div");
+      bubble.className = `bot-msg ${kind}`;
+      bubble.textContent = message;
+      stakeBotLog.appendChild(bubble);
+      stakeBotLog.scrollTop = stakeBotLog.scrollHeight;
+    }
+
+    function estimateStake() {
+      const amount = Number(stakeAmountInput.value.replace(/,/g, ""));
+      if (!Number.isFinite(amount) || amount <= 0) {
+        showToast("Enter a $TRENCH amount first.");
+        return;
+      }
+
+      const tier = getTier(amount);
+      stakeAmountStatus.textContent = `${formatNumber(amount)} $TRENCH`;
+      stakeLaneStatus.textContent = tier ? tier.name : "Below Scout";
+      stakeLaneStatus.className = tier ? "ok" : "pending";
+      stakeNote.textContent = tier
+        ? `Estimated staking lane: ${tier.name}. Final rewards depend on the live staking program rules.`
+        : "Below the proposed 100K minimum. Add more $TRENCH to reach the first staking lane.";
+    }
+
+    async function checkWallet(address) {
+      try {
+        setChecking(compactAddress(address));
+        const balance = await fetchTrenchBalance(address);
+        const tier = getTier(balance);
+
+        walletStatus.textContent = compactAddress(address);
+        balanceStatus.textContent = `${formatNumber(balance)} $TRENCH`;
+        updateStakePanel(address, balance);
+
+        if (tier) {
+          tierStatus.textContent = `${tier.name} (${tier.weight})`;
+          eligibilityStatus.textContent = "Balance qualifies";
+          eligibilityStatus.className = "ok";
+          checkerNote.textContent = "Balance threshold met. Holding-time, sell-cooldown, and wallet-cluster checks still require the official snapshot process.";
+        } else {
+          tierStatus.textContent = "Below Scout";
+          eligibilityStatus.textContent = "Needs 100K+";
+          eligibilityStatus.className = "bad";
+          checkerNote.textContent = "This wallet is below the proposed minimum for future Trench Drops.";
+        }
+      } catch (error) {
+        console.error(error);
+        walletStatus.textContent = "Check failed";
+        balanceStatus.textContent = "--";
+        tierStatus.textContent = "--";
+        eligibilityStatus.textContent = "Retry";
+        eligibilityStatus.className = "bad";
+        checkerNote.textContent = "Could not read this wallet. Check the address, then try again. Public RPCs can also rate-limit during heavy traffic.";
+      }
+    }
+
+    async function connectWallet() {
+      const provider = window.solana;
+      if (!provider?.isPhantom) {
+        showToast("Phantom wallet was not detected in this browser.");
+        return;
+      }
+
+      try {
+        const result = await provider.connect({ onlyIfTrusted: false });
+        const address = result.publicKey.toString();
+        walletInput.value = address;
+        showToast("Wallet connected for public balance check.");
+        await checkWallet(address);
+      } catch (error) {
+        console.error(error);
+        showToast("Wallet connection was cancelled or blocked.");
+      }
+    }
+
+    document.querySelectorAll("[data-copy]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        await navigator.clipboard.writeText(button.dataset.copy);
+        showToast("Copied official CA.");
+      });
+    });
+
+    connectBtn.addEventListener("click", connectWallet);
+    estimateStakeBtn.addEventListener("click", estimateStake);
+    joinStakeBtn.addEventListener("click", () => {
+      showToast("Stake intent noted locally. Join Telegram for the live staking queue.");
+      addStakeBot("user", "Join staking queue");
+      addStakeBot("bot", "You are pointed to the staking queue. Join Telegram, post your wallet, and wait for the official staking program announcement before signing anything.");
+    });
+    stakeNowBtn.addEventListener("click", () => {
+      if (!STAKING_PROGRAM_ID) {
+        showToast("Staking program is not configured yet.");
+        return;
+      }
+      showToast("Staking flow ready for program integration.");
+    });
+
+    document.querySelectorAll("[data-stake-answer]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const key = button.dataset.stakeAnswer;
+        addStakeBot("user", button.textContent);
+        addStakeBot("bot", stakeAnswers[key]);
+      });
+    });
+
+    checkBtn.addEventListener("click", async () => {
+      const address = walletInput.value.trim();
+      if (!address) {
+        showToast("Paste a public wallet address first.");
+        return;
+      }
+
+      try {
+        new PublicKey(address);
+      } catch {
+        showToast("That does not look like a valid Solana address.");
+        return;
+      }
+
+      await checkWallet(address);
+    });
+  </script>
+  <script src="/config.js"></script>
+  <script src="/widget.js"></script>
+</body>
 </html>
