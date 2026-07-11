@@ -14,6 +14,7 @@
 
   const walletErrorMessage = (error) => {
     if (error?.code === 4001) return "Wallet connection was cancelled in Phantom.";
+    if (/unexpected error/i.test(error?.message || "")) return "Phantom could not connect from this tab. Unlock Phantom, allow this site in the extension, then refresh and try again.";
     if (error?.message) return error.message;
     if (typeof error === "string") return error;
     return "Unable to connect Phantom. Make sure the Phantom extension is installed, unlocked, and allowed on this site.";
