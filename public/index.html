@@ -3,38 +3,40 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>$TRENCH | Official Trenchcoin HQ</title>
-  <meta name="description" content="Official $TRENCH headquarters. Built for the trenches. Use official links only.">
+  <title>Trench Command Center | $TRENCH</title>
+  <meta name="description" content="Official $TRENCH command center with wallet checks, verified links, staking preview, and project intel.">
   <link rel="stylesheet" href="/widget.css">
   <style>
     :root {
-      --bg: #030501;
-      --ink: #f5ffe6;
-      --muted: #a9b894;
-      --green: #b7ff19;
-      --green-2: #63ff3d;
-      --mud: #1b210d;
-      --panel: rgba(10, 15, 5, 0.84);
-      --line: rgba(183, 255, 25, 0.22);
-      --orange: #ffbd43;
-      --red: #ff574d;
+      --bg: #050801;
+      --panel: rgba(11, 17, 6, 0.92);
+      --panel-2: rgba(15, 24, 8, 0.88);
+      --line: rgba(178, 255, 65, 0.22);
+      --line-hot: rgba(255, 189, 46, 0.48);
+      --ink: #eef8d7;
+      --muted: #8e9c7c;
+      --green: #aaff33;
+      --green-2: #61ff55;
+      --amber: #ffbd2e;
+      --red: #ff604d;
+      --blue: #79b7ff;
       --shadow: rgba(0, 0, 0, 0.58);
+      --mono: "Courier New", Consolas, monospace;
+      --sans: Arial, Helvetica, sans-serif;
     }
 
     * { box-sizing: border-box; }
-
     html { scroll-behavior: smooth; }
-
     body {
       margin: 0;
       min-height: 100vh;
       color: var(--ink);
       background:
-        radial-gradient(circle at 14% 4%, rgba(183, 255, 25, 0.22), transparent 28rem),
-        radial-gradient(circle at 80% 10%, rgba(99, 255, 61, 0.12), transparent 30rem),
-        linear-gradient(120deg, rgba(3, 5, 1, 0.72), rgba(3, 5, 1, 0.94)),
+        radial-gradient(circle at 18% -8%, rgba(170, 255, 51, 0.16), transparent 28rem),
+        radial-gradient(circle at 90% 0%, rgba(255, 189, 46, 0.10), transparent 26rem),
+        linear-gradient(180deg, rgba(5,8,1,0.92), rgba(3,5,1,0.98)),
         url("/trenchcoin-x-banner.png") center top / cover fixed;
-      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", Arial, sans-serif;
+      font-family: var(--mono);
       overflow-x: hidden;
     }
 
@@ -42,543 +44,780 @@
       content: "";
       position: fixed;
       inset: 0;
+      z-index: 0;
       pointer-events: none;
       background:
-        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 4px),
-        radial-gradient(circle at 50% 120%, rgba(183, 255, 25, 0.13), transparent 26rem);
-      mix-blend-mode: screen;
-      opacity: 0.42;
-      z-index: 0;
+        linear-gradient(rgba(170,255,51,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(170,255,51,0.035) 1px, transparent 1px),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 5px);
+      background-size: 28px 28px, 28px 28px, 100% 5px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.38));
+      opacity: 0.58;
     }
 
     a { color: inherit; text-decoration: none; }
     button, input { font: inherit; }
+    button { cursor: pointer; }
 
-    .page {
+    .screen {
       position: relative;
       z-index: 1;
-      width: min(1180px, calc(100% - 28px));
-      margin: 0 auto;
-      padding: 22px 0 52px;
+      width: min(1420px, calc(100% - 24px));
+      margin: 12px auto 40px;
+      border: 1px solid rgba(170,255,51,0.18);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(5,8,1,0.9), rgba(5,8,1,0.78));
+      box-shadow: 0 30px 90px var(--shadow), inset 0 0 0 1px rgba(255,255,255,0.035);
+      overflow: hidden;
     }
 
-    .topbar {
+    .browser-bar {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(170,255,51,0.12);
+      background: rgba(0,0,0,0.38);
+    }
+
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #ff5f57; }
+    .dot:nth-child(2) { background: #febc2e; }
+    .dot:nth-child(3) { background: #28c840; }
+    .url { margin: 0 auto; color: #6d765f; font-size: 12px; }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
       gap: 18px;
-      padding: 14px 0 28px;
+      padding: 18px 22px;
+      border-bottom: 1px solid rgba(170,255,51,0.13);
+      background: rgba(6, 10, 2, 0.76);
     }
 
     .brand {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: 12px;
       min-width: 0;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
     }
 
     .brand img {
-      width: 54px;
-      height: 54px;
-      border-radius: 13px;
+      width: 58px;
+      height: 58px;
       object-fit: cover;
-      border: 2px solid var(--green);
-      box-shadow: 0 0 24px rgba(183, 255, 25, 0.33);
+      border-radius: 12px;
+      border: 1px solid rgba(255,189,46,0.42);
+      filter: saturate(0.9) contrast(1.08);
     }
 
     .brand strong {
       display: block;
-      font-size: 24px;
-      color: var(--green);
-      text-shadow: 0 0 18px rgba(183, 255, 25, 0.35);
+      color: var(--amber);
+      font: 900 25px/0.9 Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
 
     .brand span {
-      display: block;
-      color: var(--muted);
-      font: 700 12px Arial, sans-serif;
-      letter-spacing: 0.16em;
+      color: var(--green);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
     }
 
     .nav {
       display: flex;
       flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 10px;
+      justify-content: center;
+      gap: 8px;
     }
 
-    .btn {
+    .nav a, .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 44px;
-      padding: 0 16px;
-      border: 1px solid rgba(183, 255, 25, 0.35);
-      border-radius: 12px;
-      background: rgba(5, 8, 2, 0.68);
-      color: var(--ink);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 18px 30px rgba(0,0,0,0.24);
+      min-height: 38px;
+      padding: 0 13px;
+      border: 1px solid rgba(170,255,51,0.18);
+      border-radius: 7px;
+      background: rgba(170,255,51,0.055);
+      color: var(--muted);
+      font: 900 12px var(--mono);
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+      transition: 140ms ease;
     }
 
-    .btn:hover { transform: translateY(-2px); border-color: var(--green); }
-
-    .btn.primary {
-      background: linear-gradient(180deg, #d7ff36, #8aff09);
-      color: #091000;
-      border-color: #e3ff65;
-      box-shadow: 0 0 26px rgba(183, 255, 25, 0.28), 0 20px 34px rgba(0,0,0,0.32);
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.76fr);
-      gap: 22px;
-      align-items: stretch;
-      min-height: 630px;
-    }
-
-    .hero-copy {
-      position: relative;
-      overflow: hidden;
-      border: 1px solid var(--line);
-      border-radius: 28px;
-      padding: clamp(26px, 4vw, 48px);
-      background:
-        linear-gradient(120deg, rgba(3, 5, 1, 0.86), rgba(14, 22, 5, 0.64)),
-        radial-gradient(circle at 80% 20%, rgba(183, 255, 25, 0.13), transparent 24rem);
-      box-shadow: 0 28px 80px var(--shadow);
-    }
-
-    .hero-copy::after {
-      content: "$TRENCH";
-      position: absolute;
-      right: -30px;
-      bottom: -38px;
-      color: rgba(183, 255, 25, 0.045);
-      font-size: clamp(96px, 16vw, 210px);
-      transform: rotate(-8deg);
-      pointer-events: none;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      min-height: 34px;
-      padding: 0 12px;
-      border: 1px solid rgba(183,255,25,0.4);
-      border-radius: 999px;
-      background: rgba(183,255,25,0.1);
+    .nav a:hover, .nav a.active, .btn:hover {
       color: var(--green);
-      font: 900 13px Arial, sans-serif;
-      letter-spacing: 0.12em;
+      border-color: rgba(170,255,51,0.44);
+      background: rgba(170,255,51,0.11);
+    }
+
+    .btn.buy, .btn.gold {
+      color: var(--amber);
+      border-color: var(--line-hot);
+      background: rgba(255,189,46,0.08);
+    }
+
+    .status-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      border-bottom: 1px solid rgba(170,255,51,0.14);
+      background: rgba(170,255,51,0.08);
+    }
+
+    .status-item {
+      padding: 11px 18px;
+      background: rgba(5,8,1,0.86);
+      color: var(--muted);
+      font-size: 12px;
       text-transform: uppercase;
     }
 
-    .pulse {
-      width: 9px;
-      height: 9px;
+    .status-item strong { color: var(--green); }
+    .blink {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin-left: 5px;
       border-radius: 50%;
       background: var(--green);
-      box-shadow: 0 0 16px var(--green);
+      box-shadow: 0 0 12px var(--green);
+      animation: pulse 1.4s infinite;
     }
 
-    h1 {
-      position: relative;
-      margin: 22px 0 14px;
-      max-width: 780px;
-      color: var(--green);
-      font-size: clamp(70px, 12vw, 150px);
-      line-height: 0.78;
-      letter-spacing: -0.05em;
-      text-transform: uppercase;
-      text-shadow: 0 0 18px rgba(183,255,25,0.26), 0 10px 0 rgba(0,0,0,0.22);
-      z-index: 1;
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.42; transform: scale(0.72); }
     }
 
-    .drip {
-      display: block;
-      color: var(--ink);
-      font-size: clamp(26px, 4vw, 48px);
-      letter-spacing: 0.02em;
-      text-shadow: none;
-    }
-
-    .lead {
-      position: relative;
-      z-index: 1;
-      max-width: 660px;
-      color: #e4f7cb;
-      font: 800 clamp(18px, 2.4vw, 25px) Arial, sans-serif;
-      line-height: 1.35;
-    }
-
-    .hero-actions {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin: 28px 0;
-    }
-
-    .ca-card {
-      position: relative;
-      z-index: 1;
+    .dashboard {
       display: grid;
-      gap: 10px;
-      max-width: 720px;
-      padding: 16px;
-      border: 1px solid rgba(183,255,25,0.24);
-      border-radius: 18px;
-      background: rgba(0,0,0,0.34);
-      box-shadow: inset 0 0 44px rgba(183,255,25,0.035);
-    }
-
-    .ca-card span {
-      color: var(--orange);
-      font-size: 13px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
-
-    .ca-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      align-items: center;
-      font: 800 14px Consolas, "Courier New", monospace;
-      color: #d8f9b7;
-      word-break: break-all;
-    }
-
-    .copy-btn {
-      min-height: 38px;
-      padding: 0 12px;
-      border: 0;
-      border-radius: 10px;
-      background: var(--green);
-      color: #071000;
-      cursor: pointer;
-      font: 1000 13px Arial, sans-serif;
-      text-transform: uppercase;
-    }
-
-    .hero-art {
-      display: grid;
+      grid-template-columns: 1.05fr 1.35fr 1.15fr;
       gap: 16px;
-      align-content: stretch;
+      padding: 18px;
     }
 
-    .poster {
-      min-height: 430px;
+    .stack { display: grid; gap: 16px; align-content: start; }
+
+    .panel {
+      position: relative;
+      min-width: 0;
+      padding: 18px;
       border: 1px solid var(--line);
-      border-radius: 28px;
-      padding: 20px;
-      background:
-        linear-gradient(180deg, rgba(7, 11, 3, 0.24), rgba(4, 6, 2, 0.94)),
-        url("/trenchcoin-logo.png") center / cover;
-      box-shadow: 0 28px 80px var(--shadow);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      border-radius: 11px;
+      background: linear-gradient(180deg, var(--panel), rgba(7, 11, 3, 0.92));
+      box-shadow: inset 0 0 28px rgba(170,255,51,0.03), 0 18px 34px rgba(0,0,0,0.18);
       overflow: hidden;
     }
 
-    .poster-badge {
-      align-self: flex-start;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(183,255,25,0.86);
-      color: #071000;
-      font-size: 12px;
-      letter-spacing: 0.08em;
+    .panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(120deg, transparent, rgba(170,255,51,0.035), transparent);
+      opacity: 0.6;
+    }
+
+    .panel > * { position: relative; z-index: 1; }
+
+    .panel h2, .panel h3 {
+      margin: 0 0 14px;
+      color: var(--amber);
+      font: 900 18px/1.1 var(--mono);
+      letter-spacing: 0.04em;
       text-transform: uppercase;
     }
 
-    .poster-stats {
+    .panel h3.green { color: var(--green); }
+    .muted { color: var(--muted); }
+
+    .copy {
+      min-height: 35px;
+      padding: 0 10px;
+      border: 1px solid rgba(170,255,51,0.25);
+      border-radius: 7px;
+      background: rgba(170,255,51,0.08);
+      color: var(--green);
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .field {
+      width: 100%;
+      min-height: 42px;
+      padding: 0 12px;
+      border: 1px solid rgba(170,255,51,0.22);
+      border-radius: 7px;
+      background: rgba(0,0,0,0.28);
+      color: var(--ink);
+      outline: none;
+    }
+
+    .field:focus, .copy:focus, .btn:focus, .nav a:focus {
+      outline: 2px solid rgba(255,189,46,0.56);
+      outline-offset: 2px;
+    }
+
+    .wallet-row, .inline-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 9px;
+      align-items: center;
+    }
+
+    .data-list { display: grid; gap: 10px; }
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 9px;
+      border-bottom: 1px solid rgba(170,255,51,0.10);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .data-row strong { color: var(--ink); text-align: right; }
+    .ok { color: var(--green) !important; }
+    .warn { color: var(--amber) !important; }
+    .bad { color: var(--red) !important; }
+
+    .bars {
+      display: grid;
+      grid-template-columns: 3fr 1fr 1fr 1fr;
+      gap: 4px;
+      height: 11px;
+      margin-top: 11px;
+    }
+
+    .bars span { background: rgba(170,255,51,0.22); }
+    .bars span:first-child { background: var(--green); box-shadow: 0 0 10px rgba(170,255,51,0.4); }
+    .bars span:nth-child(2) { background: var(--amber); }
+
+    .chart {
+      height: 74px;
+      margin-top: 13px;
+      border: 1px solid rgba(170,255,51,0.12);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, transparent 8%, rgba(170,255,51,0.22) 8% 10%, transparent 10% 18%, rgba(170,255,51,0.18) 18% 20%, transparent 20% 31%, rgba(170,255,51,0.24) 31% 33%, transparent 33% 45%, rgba(170,255,51,0.13) 45% 47%, transparent 47% 64%, rgba(170,255,51,0.28) 64% 66%, transparent 66%),
+        linear-gradient(rgba(170,255,51,0.05) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 12px;
+    }
+
+    .mission-list { display: grid; gap: 8px; }
+    .mission {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 9px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mission .led {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px rgba(170,255,51,0.4);
+    }
+
+    .mission.warn .led { background: var(--amber); box-shadow: 0 0 10px rgba(255,189,46,0.4); }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .mini-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 10px;
     }
 
-    .stat, .card {
-      border: 1px solid rgba(183,255,25,0.19);
-      border-radius: 18px;
-      background: rgba(4,7,2,0.76);
-      backdrop-filter: blur(12px);
-      box-shadow: inset 0 0 30px rgba(183,255,25,0.035), 0 18px 40px rgba(0,0,0,0.22);
+    .mini {
+      padding: 12px;
+      border: 1px solid rgba(170,255,51,0.14);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.18);
     }
 
-    .stat {
-      padding: 14px;
+    .mini span { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .mini strong { display: block; margin-top: 7px; color: var(--green); font-size: 18px; overflow-wrap: anywhere; }
+
+    .donut-wrap {
+      display: grid;
+      grid-template-columns: 118px 1fr;
+      gap: 14px;
+      align-items: center;
     }
 
-    .stat span {
-      display: block;
-      color: var(--muted);
-      font: 800 11px Arial, sans-serif;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
+    .donut {
+      width: 112px;
+      height: 112px;
+      border-radius: 50%;
+      background: conic-gradient(var(--amber) 0 22%, var(--blue) 22% 43%, var(--green) 43% 58%, rgba(170,255,51,0.18) 58% 100%);
+      position: relative;
+      box-shadow: 0 0 24px rgba(255,189,46,0.12);
     }
 
-    .stat strong {
-      display: block;
-      margin-top: 6px;
-      color: var(--green);
-      font-size: 26px;
-      letter-spacing: 0.02em;
+    .donut::after {
+      content: "";
+      position: absolute;
+      inset: 25px;
+      border-radius: 50%;
+      background: #071003;
+      border: 1px solid rgba(170,255,51,0.14);
     }
 
-    .section-grid {
+    .docs {
+      padding: 18px;
+      border-top: 1px solid rgba(170,255,51,0.13);
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 16px;
-      margin-top: 22px;
     }
 
-    .card {
-      min-height: 220px;
-      padding: 22px;
-    }
-
-    .card h2, .card h3 {
-      margin: 0 0 12px;
-      color: var(--green);
-      font-size: 28px;
-      letter-spacing: 0.01em;
-      text-transform: uppercase;
-    }
-
-    .card p, .card li {
-      color: #d7e7c3;
-      font: 700 15px/1.55 Arial, sans-serif;
-    }
-
-    .card ul {
+    .docs ul {
       margin: 0;
-      padding-left: 19px;
-    }
-
-    .wide {
-      grid-column: span 2;
-    }
-
-    .tokenomics {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .mini {
-      padding: 14px;
-      border-radius: 14px;
-      background: rgba(183,255,25,0.08);
-      border: 1px solid rgba(183,255,25,0.18);
-    }
-
-    .mini span {
-      display: block;
+      padding-left: 18px;
       color: var(--muted);
-      font: 800 11px Arial, sans-serif;
-      letter-spacing: .1em;
-      text-transform: uppercase;
+      font-size: 13px;
+      line-height: 1.6;
     }
 
-    .mini strong {
-      display: block;
-      margin-top: 7px;
-      color: var(--ink);
-      font-size: 22px;
-    }
-
-    .wallet-check {
+    .ca-footer {
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 10px;
-      margin-top: 12px;
+      gap: 12px;
+      align-items: center;
+      margin: 0 18px 18px;
+      padding: 16px;
+      border: 1px solid rgba(170,255,51,0.16);
+      border-radius: 10px;
+      background: rgba(8,13,4,0.86);
     }
 
-    .wallet-check input {
-      min-height: 46px;
-      width: 100%;
-      border: 1px solid rgba(183,255,25,0.24);
-      border-radius: 12px;
-      padding: 0 14px;
-      background: rgba(0,0,0,0.34);
-      color: var(--ink);
-      font: 700 14px Arial, sans-serif;
-      outline: none;
-    }
+    .ca-footer code { color: var(--ink); overflow-wrap: anywhere; }
 
-    .wallet-status {
-      margin-top: 12px;
-      color: var(--orange);
-      font: 800 13px Arial, sans-serif;
-      min-height: 18px;
-    }
-
-    .footer {
-      margin-top: 24px;
-      padding: 18px 0;
-      color: var(--muted);
-      font: 800 12px Arial, sans-serif;
-      letter-spacing: 0.12em;
-      text-align: center;
-      text-transform: uppercase;
-    }
-
-    @media (max-width: 920px) {
-      .topbar { align-items: flex-start; flex-direction: column; }
+    @media (max-width: 1120px) {
+      .dashboard { grid-template-columns: 1fr 1fr; }
+      .stack:last-child { grid-column: 1 / -1; grid-template-columns: repeat(2, 1fr); }
+      .topbar { grid-template-columns: 1fr; }
       .nav { justify-content: flex-start; }
-      .hero, .section-grid { grid-template-columns: 1fr; }
-      .wide { grid-column: auto; }
-      .tokenomics, .poster-stats { grid-template-columns: repeat(2, 1fr); }
-      .wallet-check, .ca-row { grid-template-columns: 1fr; }
     }
 
-    @media (max-width: 560px) {
-      .nav .btn { width: 100%; }
-      .hero-copy, .poster, .card { border-radius: 20px; }
-      .tokenomics { grid-template-columns: 1fr; }
+    @media (max-width: 760px) {
+      .screen { width: min(100% - 12px, 1420px); margin-top: 6px; }
+      .dashboard, .docs, .two-col, .stack:last-child { grid-template-columns: 1fr; }
+      .status-bar { grid-template-columns: 1fr 1fr; }
+      .wallet-row, .inline-row, .ca-footer, .donut-wrap { grid-template-columns: 1fr; }
+      .topbar { padding: 14px; }
+      .dashboard, .docs { padding: 12px; }
+      .panel { padding: 15px; }
+    }
+
+    @media (max-width: 430px) {
+      .status-bar, .mini-grid { grid-template-columns: 1fr; }
+      .brand strong { font-size: 21px; }
+      .nav a, .btn { width: 100%; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="screen">
+    <div class="browser-bar" aria-hidden="true">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="url">trenchcoinhq.netlify.app</span>
+    </div>
+
     <header class="topbar">
-      <a class="brand" href="#top" aria-label="Trenchcoin home">
-        <img src="/trenchcoin-logo.png" alt="$TRENCH logo">
-        <span>
-          <strong>Trenchcoin</strong>
-          <span>Official $TRENCH HQ</span>
-        </span>
+      <a class="brand" href="#dashboard" aria-label="Trench Command Center home">
+        <img src="/trenchcoin-logo.png" alt="$TRENCH helmet logo">
+        <span><strong>Trench<br>Command Center</strong><span>Official $TRENCH HQ</span></span>
       </a>
-      <nav class="nav" aria-label="Official links">
-        <a class="btn" href="https://x.com/TrenchcoinHQ">X</a>
-        <a class="btn" href="https://t.me/+_ct7Uyx2-C1kYzYx">Telegram</a>
-        <a class="btn" href="#intel">Intel</a>
-        <a class="btn primary" href="https://pump.fun/coin/H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump">Buy $TRENCH</a>
+      <nav class="nav" aria-label="Command Center navigation">
+        <a class="active" href="#dashboard">Dashboard</a>
+        <a href="#intel">Intel</a>
+        <a href="#operations">Operations</a>
+        <a href="#leaderboard">Leaderboard</a>
+        <a href="#docs">Docs</a>
       </nav>
+      <a class="btn buy" href="https://pump.fun/coin/H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump">Buy $TRENCH</a>
     </header>
 
-    <main id="top">
-      <section class="hero" aria-label="$TRENCH hero">
-        <div class="hero-copy">
-          <div class="eyebrow"><span class="pulse"></span> Official links only</div>
-          <h1>$TRENCH <span class="drip">The trenches are calling.</span></h1>
-          <p class="lead">$TRENCH is the people’s meme coin for trench warfare, late-night raids, and holders who know the difference between noise and a real CA.</p>
-          <div class="hero-actions">
-            <a class="btn primary" href="https://pump.fun/coin/H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump">Buy on Pump.fun</a>
-            <a class="btn" href="https://t.me/+_ct7Uyx2-C1kYzYx">Join Telegram</a>
-            <a class="btn" href="https://x.com/TrenchcoinHQ">Follow X</a>
-          </div>
-          <div class="ca-card">
-            <span>Official contract address</span>
-            <div class="ca-row">
-              <code id="official-ca">H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump</code>
-              <button class="copy-btn" type="button" data-copy-ca>Copy CA</button>
-            </div>
-          </div>
-        </div>
+    <section class="status-bar" aria-label="Command status">
+      <div class="status-item">Status: <strong>Operational</strong><span class="blink"></span></div>
+      <div class="status-item">Mission: <strong>Financial Freedom</strong><span class="blink"></span></div>
+      <div class="status-item">Trench Time: <strong>24/7</strong></div>
+      <div class="status-item">Vibes: <strong>Maximum</strong><span class="blink"></span></div>
+    </section>
 
-        <aside class="hero-art" aria-label="Trenchcoin field board">
-          <div class="poster">
-            <span class="poster-badge">Meme war room</span>
-            <div class="poster-stats">
-              <div class="stat"><span>Community</span><strong>100%</strong></div>
-              <div class="stat"><span>Vibes</span><strong>Max</strong></div>
-              <div class="stat"><span>Official CA</span><strong>Live</strong></div>
-              <div class="stat"><span>Bot</span><strong>Online</strong></div>
-            </div>
+    <main id="dashboard" class="dashboard">
+      <section class="stack">
+        <article class="panel" id="wallet-panel">
+          <h2 class="green">Wallet Check</h2>
+          <p class="muted">Connect Phantom or paste a public Solana wallet. This checks public-chain $TRENCH balance only.</p>
+          <div class="wallet-row">
+            <input id="walletInput" class="field" autocomplete="off" spellcheck="false" placeholder="Paste wallet address">
+            <button id="connectBtn" class="copy" type="button">Connect Wallet</button>
           </div>
-        </aside>
+          <div class="inline-row" style="margin-top:9px">
+            <button id="checkBtn" class="btn gold" type="button">Run Check</button>
+            <span id="walletState" class="warn">Disconnected</span>
+          </div>
+          <div class="mini-grid" style="margin-top:14px">
+            <div class="mini"><span>Address</span><strong id="walletStatus">--</strong></div>
+            <div class="mini"><span>$TRENCH Balance</span><strong id="balanceStatus">--</strong></div>
+            <div class="mini"><span>Drop Tier</span><strong id="tierStatus">--</strong></div>
+            <div class="mini"><span>Eligibility</span><strong id="eligibilityStatus">--</strong></div>
+          </div>
+          <p id="checkerNote" class="muted">Minimum for future Trench Drops: 100,000 $TRENCH. Holding-time and sell-cooldown checks require official snapshots.</p>
+        </article>
+
+        <article class="panel">
+          <h3 class="green">$TRENCH Stats</h3>
+          <div class="data-list">
+            <div class="data-row"><span>Price</span><strong id="priceStatus">Data feed pending</strong></div>
+            <div class="data-row"><span>Market Cap</span><strong>Unavailable</strong></div>
+            <div class="data-row"><span>Liquidity</span><strong>Unavailable</strong></div>
+            <div class="data-row"><span>24H Volume</span><strong>Unavailable</strong></div>
+          </div>
+          <div class="chart" aria-label="Chart placeholder for future real market data"></div>
+        </article>
+
+        <article class="panel">
+          <h3 class="green">Telegram Ops</h3>
+          <p class="muted">Join the official trench for real-time intel, memes, and support.</p>
+          <div class="data-row"><span>Member count</span><strong>Source unavailable</strong></div>
+          <a class="btn gold" href="https://t.me/+_ct7Uyx2-C1kYzYx" style="margin-top:14px">Join Telegram</a>
+        </article>
       </section>
 
-      <section class="section-grid" id="intel">
-        <article class="card">
-          <h2>What is $TRENCH?</h2>
-          <p>A trench-born meme coin with one simple command: use the official links, verify the CA, and keep the community moving.</p>
+      <section class="stack">
+        <div class="two-col">
+          <article class="panel">
+            <h2>Holder Status</h2>
+            <div class="data-list">
+              <div class="data-row"><span>Total Holders</span><strong>Data feed pending</strong></div>
+              <div class="data-row"><span>Active (24H)</span><strong>Unavailable</strong></div>
+              <div class="data-row"><span>Whales</span><strong>Unavailable</strong></div>
+              <div class="data-row"><span>Distribution</span><strong class="warn">Awaiting real feed</strong></div>
+            </div>
+            <div class="bars" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          </article>
+
+          <article class="panel" id="mint">
+            <h2>Official Mint</h2>
+            <div class="data-list">
+              <div class="data-row"><span>Mint</span><strong>H57t...pump</strong></div>
+              <div class="data-row"><span>Mint Revoked</span><strong class="warn">Not verified here</strong></div>
+              <div class="data-row"><span>LP Burned</span><strong class="warn">Not verified here</strong></div>
+              <div class="data-row"><span>Tax</span><strong class="warn">Not applicable / unverified</strong></div>
+            </div>
+            <div class="inline-row" style="margin-top:14px">
+              <button class="copy" type="button" data-copy-ca>Copy CA</button>
+              <a class="btn gold" href="https://solscan.io/token/H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump">View on Explorer</a>
+            </div>
+          </article>
+        </div>
+
+        <article class="panel" id="operations">
+          <h2>Staking Preview</h2>
+          <p class="muted">Real token locking is not live. This console estimates a future staking lane from wallet balance or planned amount.</p>
+          <div class="mini-grid">
+            <div class="mini"><span>Connected Wallet</span><strong id="stakeWalletStatus">--</strong></div>
+            <div class="mini"><span>Available Balance</span><strong id="stakeBalanceStatus">--</strong></div>
+            <div class="mini"><span>Planned Stake</span><strong id="stakeAmountStatus">--</strong></div>
+            <div class="mini"><span>Reward Lane</span><strong id="stakeLaneStatus" class="warn">Preview</strong></div>
+          </div>
+          <div class="wallet-row" style="margin-top:13px">
+            <input id="stakeAmountInput" class="field" inputmode="decimal" placeholder="Enter planned $TRENCH amount">
+            <button id="estimateStakeBtn" class="copy" type="button">Estimate</button>
+          </div>
+          <div class="inline-row" style="margin-top:12px">
+            <button id="joinStakeBtn" class="btn gold" type="button">Join Queue</button>
+            <button id="stakeNowBtn" class="btn" type="button" disabled>Coming Soon</button>
+          </div>
+          <p id="stakeNote" class="muted">Staking program address is awaiting configuration. No APY, locking, or claims are enabled.</p>
         </article>
 
-        <article class="card">
-          <h2>Safety first</h2>
-          <ul>
-            <li>Never share a seed phrase.</li>
-            <li>Only trust the official CA.</li>
-            <li>Signing a message should not spend funds.</li>
-            <li>Ignore fake “support” DMs.</li>
-          </ul>
+        <article class="panel">
+          <h2>Mission Feed</h2>
+          <div class="mission-list">
+            <div class="mission"><span class="led"></span><span>Production site linked to GitHub → Netlify pipeline.</span><span>verified</span></div>
+            <div class="mission"><span class="led"></span><span>Railway backend reports healthy mainnet-beta preview mode.</span><span>verified</span></div>
+            <div class="mission warn"><span class="led"></span><span>Staking remains preview-only until program deployment/configuration.</span><span>preview</span></div>
+            <div class="mission"><span class="led"></span><span>Official CA and links locked to project references.</span><span>active</span></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="stack">
+        <article class="panel" id="leaderboard">
+          <h2>Leaderboard</h2>
+          <p class="muted">Leaderboard UI is ready; real rankings need a connected, privacy-safe source.</p>
+          <div class="data-list">
+            <div class="data-row"><span>#1</span><strong>Preview pending</strong></div>
+            <div class="data-row"><span>#2</span><strong>Preview pending</strong></div>
+            <div class="data-row"><span>#3</span><strong>Preview pending</strong></div>
+          </div>
+          <button class="btn gold" type="button" data-bot-question="leaderboard">View Full Board</button>
         </article>
 
-        <article class="card">
-          <h2>Official routes</h2>
-          <p>Website, X, Telegram, Coinbase price page, and Pump.fun all point back to the same official $TRENCH identity.</p>
-          <div class="hero-actions">
-            <a class="btn" href="https://www.coinbase.com/price/trenchcoin-solana-h57tu3nierfgfok2z2ijrgdjh2h12e6bmjwe7hanpump-token">Coinbase</a>
-            <a class="btn" href="https://pump.fun/coin/H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump">Pump</a>
+        <article class="panel">
+          <h2>Supply Overview</h2>
+          <div class="donut-wrap">
+            <div class="donut" aria-hidden="true"></div>
+            <div class="data-list">
+              <div class="data-row"><span>Total Supply</span><strong>1B target / verify on-chain</strong></div>
+              <div class="data-row"><span>Allocation</span><strong class="warn">Breakdown pending</strong></div>
+              <div class="data-row"><span>CEX</span><strong class="warn">Not configured</strong></div>
+            </div>
           </div>
         </article>
 
-        <article class="card wide">
-          <h2>Trench stats</h2>
-          <p>Simple, loud, and official. No confusing duplicate token, no fake CA, no random links. This HQ points everyone to the same $TRENCH trench line.</p>
-          <div class="tokenomics">
-            <div class="mini"><span>Token</span><strong>$TRENCH</strong></div>
-            <div class="mini"><span>Network</span><strong>Solana</strong></div>
-            <div class="mini"><span>Mint</span><strong>H57t...pump</strong></div>
-            <div class="mini"><span>Staking</span><strong>Preview</strong></div>
+        <article class="panel">
+          <h2>QRF Protocol</h2>
+          <div class="data-list">
+            <div class="data-row"><span>Wallet checks</span><strong class="ok">Public-chain data</strong></div>
+            <div class="data-row"><span>Spending tx</span><strong class="ok">Not requested</strong></div>
+            <div class="data-row"><span>Seed phrase</span><strong class="ok">Never requested</strong></div>
+            <div class="data-row"><span>Audit claim</span><strong class="warn">No formal audit listed</strong></div>
           </div>
-        </article>
-
-        <article class="card">
-          <h2>Wallet check</h2>
-          <p>Paste a Solana wallet or connect Phantom to check $TRENCH balance. No transaction required.</p>
-          <div class="wallet-check">
-            <input id="walletInput" autocomplete="off" spellcheck="false" placeholder="Paste wallet address">
-            <button class="copy-btn" id="connectBtn" type="button">Phantom</button>
-          </div>
-          <p class="wallet-status" id="walletStatus">Balance check ready.</p>
         </article>
       </section>
     </main>
 
-    <footer class="footer">#godbless the trenches — official $TRENCH links only</footer>
+    <section class="docs" id="intel" aria-label="Project intel and documentation">
+      <article class="panel">
+        <h2>Intel</h2>
+        <ul>
+          <li>Trench Drops: future eligibility starts at 100,000 $TRENCH, with snapshots required.</li>
+          <li>Anti-Bundle Rules: holder checks need sell-cooldown and wallet-cluster review before rewards.</li>
+          <li>Trench AI: command bot provides fixed official project answers and navigation.</li>
+        </ul>
+      </article>
+      <article class="panel" id="docs">
+        <h2>Docs</h2>
+        <ul>
+          <li>Roadmap: wallet checks live; staking preview live; token locking awaits program configuration.</li>
+          <li>Transparency: use only official website, X, Telegram, Coinbase price page, and Pump.fun link.</li>
+          <li>Creator, reward, and claim-wallet details are tracked in project records and should be verified before publishing.</li>
+        </ul>
+      </article>
+      <article class="panel">
+        <h2>Official Links</h2>
+        <ul>
+          <li><a href="https://x.com/TrenchcoinHQ">X: @TrenchcoinHQ</a></li>
+          <li><a href="https://t.me/+_ct7Uyx2-C1kYzYx">Telegram trench</a></li>
+          <li><a href="https://www.coinbase.com/price/trenchcoin-solana-h57tu3nierfgfok2z2ijrgdjh2h12e6bmjwe7hanpump-token">Coinbase price page</a></li>
+          <li><a href="https://pump.fun/coin/H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump">Pump.fun $TRENCH</a></li>
+        </ul>
+      </article>
+    </section>
+
+    <footer class="ca-footer">
+      <div>
+        <span class="muted">Official CA</span><br>
+        <code id="officialCa">H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump</code>
+      </div>
+      <div class="inline-row">
+        <button class="copy" type="button" data-copy-ca>Copy</button>
+        <a class="btn gold" href="https://solscan.io/token/H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump">Explorer</a>
+      </div>
+    </footer>
   </div>
 
-  <script>
-    const OFFICIAL_CA = "H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump";
-    const copyButton = document.querySelector("[data-copy-ca]");
-    const walletInput = document.querySelector("#walletInput");
-    const connectBtn = document.querySelector("#connectBtn");
-    const walletStatus = document.querySelector("#walletStatus");
+  <script type="module">
+    import { Connection, PublicKey } from "https://esm.sh/@solana/web3.js@1.98.4";
 
-    copyButton.addEventListener("click", async () => {
-      await navigator.clipboard.writeText(OFFICIAL_CA);
-      copyButton.textContent = "Copied";
-      window.setTimeout(() => copyButton.textContent = "Copy CA", 1400);
-    });
+    const MINT = "H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump";
+    const RPC_ENDPOINTS = ["https://api.mainnet-beta.solana.com", "https://solana-rpc.publicnode.com"];
+    const tiers = [
+      { name: "Trench Legend", min: 5_000_000, weight: "10 entries max" },
+      { name: "Commander", min: 1_000_000, weight: "6 entries" },
+      { name: "Soldier", min: 500_000, weight: "3 entries" },
+      { name: "Scout", min: 100_000, weight: "1 entry" }
+    ];
+    const state = { endpointIndex: 0, decimals: null };
+    const $ = (selector) => document.querySelector(selector);
+    const walletInput = $("#walletInput");
+    const walletState = $("#walletState");
+    const walletStatus = $("#walletStatus");
+    const balanceStatus = $("#balanceStatus");
+    const tierStatus = $("#tierStatus");
+    const eligibilityStatus = $("#eligibilityStatus");
+    const checkerNote = $("#checkerNote");
+    const stakeWalletStatus = $("#stakeWalletStatus");
+    const stakeBalanceStatus = $("#stakeBalanceStatus");
+    const stakeAmountStatus = $("#stakeAmountStatus");
+    const stakeLaneStatus = $("#stakeLaneStatus");
+    const stakeAmountInput = $("#stakeAmountInput");
+    const stakeNote = $("#stakeNote");
 
-    connectBtn.addEventListener("click", async () => {
+    function connection() {
+      return new Connection(RPC_ENDPOINTS[state.endpointIndex], "confirmed");
+    }
+
+    function compactAddress(address) {
+      return `${address.slice(0, 4)}...${address.slice(-4)}`;
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat("en-US", { maximumFractionDigits: value >= 1 ? 2 : 6 }).format(value);
+    }
+
+    function getTier(balance) {
+      return tiers.find((tier) => balance >= tier.min) ?? null;
+    }
+
+    async function getMintDecimals() {
+      if (state.decimals !== null) return state.decimals;
+      const account = await connection().getParsedAccountInfo(new PublicKey(MINT));
+      state.decimals = account.value?.data?.parsed?.info?.decimals ?? 6;
+      return state.decimals;
+    }
+
+    async function fetchTrenchBalance(walletAddress) {
+      const owner = new PublicKey(walletAddress);
+      const mint = new PublicKey(MINT);
+      const decimals = await getMintDecimals();
+      const response = await connection().getParsedTokenAccountsByOwner(owner, { mint });
+      let rawTotal = 0n;
+      for (const account of response.value) {
+        rawTotal += BigInt(account.account.data.parsed.info.tokenAmount.amount);
+      }
+      return Number(rawTotal) / 10 ** decimals;
+    }
+
+    function setChecking(address) {
+      walletState.textContent = "Checking";
+      walletState.className = "warn";
+      walletStatus.textContent = compactAddress(address);
+      balanceStatus.textContent = "--";
+      tierStatus.textContent = "--";
+      eligibilityStatus.textContent = "--";
+      eligibilityStatus.className = "";
+    }
+
+    function updateStakePanel(address, balance) {
+      const tier = getTier(balance);
+      stakeWalletStatus.textContent = compactAddress(address);
+      stakeBalanceStatus.textContent = `${formatNumber(balance)} $TRENCH`;
+      stakeLaneStatus.textContent = tier ? tier.name : "Need 100K+";
+      stakeLaneStatus.className = tier ? "ok" : "warn";
+    }
+
+    async function checkWallet(address) {
+      setChecking(address);
+      try {
+        const balance = await fetchTrenchBalance(address);
+        const tier = getTier(balance);
+        walletState.textContent = "Success";
+        walletState.className = "ok";
+        walletStatus.textContent = compactAddress(address);
+        balanceStatus.textContent = `${formatNumber(balance)} $TRENCH`;
+        updateStakePanel(address, balance);
+        if (tier) {
+          tierStatus.textContent = `${tier.name} (${tier.weight})`;
+          eligibilityStatus.textContent = "Balance qualifies";
+          eligibilityStatus.className = "ok";
+          checkerNote.textContent = "Balance threshold met. Holding-time, sell-cooldown, and wallet-cluster checks still require the official snapshot process.";
+        } else {
+          tierStatus.textContent = "Below Scout";
+          eligibilityStatus.textContent = "Needs 100K+";
+          eligibilityStatus.className = "bad";
+          checkerNote.textContent = "This wallet is below the proposed minimum for future Trench Drops.";
+        }
+      } catch (error) {
+        console.error(error);
+        walletState.textContent = "Error";
+        walletState.className = "bad";
+        balanceStatus.textContent = "--";
+        tierStatus.textContent = "--";
+        eligibilityStatus.textContent = "Retry";
+        eligibilityStatus.className = "bad";
+        checkerNote.textContent = "Could not read this wallet. Check the address, then try again. Public RPCs can rate-limit during heavy traffic.";
+      }
+    }
+
+    async function connectWallet() {
       const provider = window.solana;
       if (!provider?.isPhantom) {
-        walletStatus.textContent = "Phantom is not unlocked or installed in this browser.";
+        walletState.textContent = "Phantom unavailable";
+        walletState.className = "bad";
         return;
       }
-
       try {
         const result = await provider.connect({ onlyIfTrusted: false });
-        walletInput.value = result.publicKey.toString();
-        walletStatus.textContent = "Wallet connected. Use the $TRENCH bot for verification help.";
-      } catch {
-        walletStatus.textContent = "Wallet connection cancelled or blocked.";
+        const address = result.publicKey.toString();
+        walletInput.value = address;
+        await checkWallet(address);
+      } catch (error) {
+        console.error(error);
+        walletState.textContent = "Connection cancelled";
+        walletState.className = "bad";
       }
+    }
+
+    function estimateStake() {
+      const amount = Number(stakeAmountInput.value.replace(/,/g, ""));
+      if (!Number.isFinite(amount) || amount <= 0) {
+        stakeNote.textContent = "Enter a planned $TRENCH amount first.";
+        return;
+      }
+      const tier = getTier(amount);
+      stakeAmountStatus.textContent = `${formatNumber(amount)} $TRENCH`;
+      stakeLaneStatus.textContent = tier ? tier.name : "Below Scout";
+      stakeLaneStatus.className = tier ? "ok" : "warn";
+      stakeNote.textContent = tier
+        ? `Estimated lane: ${tier.name}. Final rewards depend on live staking program rules.`
+        : "Below the proposed 100K minimum. Add more $TRENCH to reach the first staking lane.";
+    }
+
+    document.querySelectorAll("[data-copy-ca]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        await navigator.clipboard.writeText(MINT);
+        const original = button.textContent;
+        button.textContent = "Copied";
+        window.setTimeout(() => { button.textContent = original; }, 1400);
+      });
+    });
+
+    $("#connectBtn").addEventListener("click", connectWallet);
+    $("#checkBtn").addEventListener("click", async () => {
+      const address = walletInput.value.trim();
+      if (!address) {
+        walletState.textContent = "Paste address";
+        walletState.className = "warn";
+        return;
+      }
+      try {
+        new PublicKey(address);
+      } catch {
+        walletState.textContent = "Invalid address";
+        walletState.className = "bad";
+        return;
+      }
+      await checkWallet(address);
+    });
+    $("#estimateStakeBtn").addEventListener("click", estimateStake);
+    $("#joinStakeBtn").addEventListener("click", () => {
+      stakeNote.textContent = "Queue intent noted locally. Join Telegram for staking announcements before signing anything.";
+      window.location.hash = "operations";
+    });
+
+    document.querySelectorAll("[data-bot-question]").forEach((button) => {
+      button.addEventListener("click", () => {
+        window.dispatchEvent(new CustomEvent("trench:bot-question", { detail: button.dataset.botQuestion }));
+      });
     });
   </script>
   <script src="/config.js"></script>

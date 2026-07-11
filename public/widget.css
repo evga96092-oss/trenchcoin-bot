@@ -3,120 +3,186 @@
   right: 18px;
   bottom: 18px;
   z-index: 9999;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Courier New", Consolas, monospace;
 }
 
 #trench-widget .trench-toggle {
-  border: 1px solid rgba(183, 255, 25, 0.78);
-  border-radius: 14px;
-  background: linear-gradient(180deg, #d7ff36, #84ff08);
-  color: #071000;
-  font-weight: 1000;
-  letter-spacing: 0.04em;
-  padding: 13px 16px;
+  border: 1px solid rgba(255, 189, 46, 0.58);
+  border-radius: 8px;
+  background: rgba(12, 18, 5, 0.96);
+  color: #ffbd2e;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  padding: 12px 14px;
   cursor: pointer;
-  box-shadow: 0 0 28px rgba(183, 255, 25, 0.34), 0 14px 34px rgba(0, 0, 0, 0.44);
+  box-shadow: 0 0 24px rgba(255, 189, 46, 0.14), 0 18px 42px rgba(0, 0, 0, 0.52);
   text-transform: uppercase;
 }
 
 #trench-widget .trench-panel {
   display: none;
-  width: min(380px, calc(100vw - 36px));
-  max-height: 610px;
+  width: min(390px, calc(100vw - 36px));
+  max-height: min(660px, calc(100vh - 96px));
   margin-bottom: 12px;
-  border: 1px solid rgba(183, 255, 25, 0.32);
-  border-radius: 20px;
+  border: 1px solid rgba(170, 255, 51, 0.28);
+  border-radius: 13px;
   background:
-    radial-gradient(circle at 20% 0%, rgba(183, 255, 25, 0.18), transparent 14rem),
-    linear-gradient(180deg, rgba(8, 12, 3, 0.98), rgba(3, 5, 1, 0.98));
-  color: #f5ffe6;
+    linear-gradient(rgba(170,255,51,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(170,255,51,0.025) 1px, transparent 1px),
+    radial-gradient(circle at 18% 0%, rgba(170, 255, 51, 0.14), transparent 13rem),
+    linear-gradient(180deg, rgba(9, 14, 4, 0.99), rgba(3, 5, 1, 0.99));
+  background-size: 18px 18px, 18px 18px, auto, auto;
+  color: #eef8d7;
   overflow: hidden;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.58), inset 0 0 0 1px rgba(255,255,255,0.04);
-  backdrop-filter: blur(16px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.62), inset 0 0 0 1px rgba(255,255,255,0.04);
 }
 
-#trench-widget .trench-panel.open {
-  display: block;
-}
+#trench-widget .trench-panel.open { display: block; }
 
 #trench-widget header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 15px;
-  border-bottom: 1px solid rgba(183, 255, 25, 0.18);
-  background: rgba(183, 255, 25, 0.08);
+  padding: 13px 14px;
+  border-bottom: 1px solid rgba(170, 255, 51, 0.18);
+  background: rgba(0, 0, 0, 0.24);
 }
 
 #trench-widget header strong {
-  color: #b7ff19;
-  font-weight: 1000;
+  display: block;
+  color: #ffbd2e;
+  font-size: 18px;
+  line-height: 1;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
+#trench-widget header small {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 4px;
+  color: #aaff33;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+#trench-widget header i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #aaff33;
+  box-shadow: 0 0 11px #aaff33;
+}
+
 #trench-widget .trench-close {
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #eef8d7;
   cursor: pointer;
   font-weight: 900;
 }
 
 #trench-widget .trench-log {
-  max-height: 300px;
+  max-height: 265px;
   overflow: auto;
   padding: 14px;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.45;
   white-space: pre-wrap;
 }
 
 #trench-widget .trench-log p {
-  margin: 0 0 11px;
+  margin: 0 0 10px;
   padding: 10px 11px;
-  border: 1px solid rgba(183, 255, 25, 0.14);
-  border-radius: 12px;
-  background: rgba(255,255,255,0.045);
-  color: #e6f8d2;
+  border: 1px solid rgba(170, 255, 51, 0.14);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.22);
+  color: #dceac7;
 }
 
 #trench-widget .trench-log .bot {
-  border-color: rgba(183, 255, 25, 0.2);
-  background: rgba(183, 255, 25, 0.08);
+  border-color: rgba(170, 255, 51, 0.23);
+  color: #aaff33;
 }
 
 #trench-widget .trench-log .user {
-  margin-left: 28px;
-  border-color: rgba(255, 189, 67, 0.28);
-  background: rgba(255, 189, 67, 0.08);
-  color: #ffdb8a;
+  margin-left: 30px;
+  border-color: rgba(255, 189, 46, 0.30);
+  color: #ffcf68;
 }
 
 #trench-widget .trench-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  padding: 14px;
-  border-top: 1px solid rgba(183, 255, 25, 0.18);
+  padding: 12px 14px;
+  border-top: 1px solid rgba(170, 255, 51, 0.16);
 }
 
 #trench-widget .trench-options button {
-  min-height: 40px;
-  border: 1px solid rgba(183, 255, 25, 0.23);
-  border-radius: 12px;
-  background: rgba(183, 255, 25, 0.08);
-  color: #f5ffe6;
+  min-height: 36px;
+  border: 1px solid rgba(170, 255, 51, 0.22);
+  border-radius: 999px;
+  background: rgba(170, 255, 51, 0.07);
+  color: #dceac7;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
-  text-transform: uppercase;
 }
 
-#trench-widget .trench-options button:hover {
-  border-color: #b7ff19;
-  background: rgba(183, 255, 25, 0.16);
+#trench-widget .trench-options button:hover,
+#trench-widget .trench-options button:focus {
+  border-color: rgba(170, 255, 51, 0.62);
+  color: #aaff33;
+}
+
+#trench-widget .trench-input {
+  display: grid;
+  grid-template-columns: 1fr 42px;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid rgba(170, 255, 51, 0.16);
+}
+
+#trench-widget .trench-input input {
+  min-height: 38px;
+  width: 100%;
+  border: 1px solid rgba(170, 255, 51, 0.18);
+  border-radius: 7px;
+  background: rgba(0,0,0,0.28);
+  color: #eef8d7;
+  padding: 0 10px;
+  outline: none;
+}
+
+#trench-widget .trench-input input:focus {
+  border-color: rgba(255, 189, 46, 0.56);
+}
+
+#trench-widget .trench-input button {
+  border: 1px solid rgba(170, 255, 51, 0.32);
+  border-radius: 7px;
+  background: rgba(170, 255, 51, 0.12);
+  color: #aaff33;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+@media (max-width: 520px) {
+  #trench-widget {
+    right: 10px;
+    bottom: 10px;
+  }
+
+  #trench-widget .trench-panel {
+    width: calc(100vw - 20px);
+  }
+
+  #trench-widget .trench-options {
+    grid-template-columns: 1fr;
+  }
 }
