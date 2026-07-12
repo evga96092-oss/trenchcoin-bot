@@ -109,6 +109,20 @@
   color: #aaff33;
 }
 
+#trench-widget .trench-log .bot a {
+  color: #ffbd2e;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+#trench-widget .trench-log .bot a:hover,
+#trench-widget .trench-log .bot a:focus {
+  color: #fff2a8;
+}
+
 #trench-widget .trench-log .user {
   margin-left: 30px;
   border-color: rgba(255, 189, 46, 0.30);
