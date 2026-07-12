@@ -636,17 +636,13 @@
   </div>
 
   <script type="module">
-    import { Connection, PublicKey } from "https://esm.sh/@solana/web3.js@1.98.4";
-
     const MINT = "H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump";
-    const RPC_ENDPOINTS = ["https://api.mainnet-beta.solana.com", "https://solana-rpc.publicnode.com"];
     const tiers = [
       { name: "Trench Legend", min: 5_000_000, weight: "10 entries max" },
       { name: "Commander", min: 1_000_000, weight: "6 entries" },
       { name: "Soldier", min: 500_000, weight: "3 entries" },
       { name: "Scout", min: 100_000, weight: "1 entry" }
     ];
-    const state = { endpointIndex: 0, decimals: null };
     const $ = (selector) => document.querySelector(selector);
     const walletInput = $("#walletInput");
     const walletState = $("#walletState");
@@ -662,10 +658,6 @@
     const stakeAmountInput = $("#stakeAmountInput");
     const stakeNote = $("#stakeNote");
 
-    function connection() {
-      return new Connection(RPC_ENDPOINTS[state.endpointIndex], "confirmed");
-    }
-
     function compactAddress(address) {
       return `${address.slice(0, 4)}...${address.slice(-4)}`;
     }
@@ -678,23 +670,29 @@
       return tiers.find((tier) => balance >= tier.min) ?? null;
     }
 
-    async function getMintDecimals() {
-      if (state.decimals !== null) return state.decimals;
-      const account = await connection().getParsedAccountInfo(new PublicKey(MINT));
-      state.decimals = account.value?.data?.parsed?.info?.decimals ?? 6;
-      return state.decimals;
+    function getBackendUrl() {
+      return window.TRENCH_CONFIG?.backendUrl || "https://trenchcoin-bot-production.up.railway.app";
+    }
+
+    function isLikelySolanaAddress(address) {
+      return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
     }
 
     async function fetchTrenchBalance(walletAddress) {
-      const owner = new PublicKey(walletAddress);
-      const mint = new PublicKey(MINT);
-      const decimals = await getMintDecimals();
-      const response = await connection().getParsedTokenAccountsByOwner(owner, { mint });
-      let rawTotal = 0n;
-      for (const account of response.value) {
-        rawTotal += BigInt(account.account.data.parsed.info.tokenAmount.amount);
+      const response = await fetch(`${getBackendUrl()}/api/wallet/${encodeURIComponent(walletAddress)}/balance`, {
+        headers: { "accept": "application/json" }
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(payload.error || payload.status || "balance_lookup_failed");
+        error.status = payload.status || "rpc_unavailable";
+        throw error;
       }
-      return Number(rawTotal) / 10 ** decimals;
+      return {
+        balance: Number(payload.balanceUi ?? 0),
+        status: payload.status || "unknown",
+        slot: payload.slot ?? null
+      };
     }
 
     function setChecking(address) {
@@ -718,7 +716,8 @@
     async function checkWallet(address) {
       setChecking(address);
       try {
-        const balance = await fetchTrenchBalance(address);
+        const result = await fetchTrenchBalance(address);
+        const balance = result.balance;
         const tier = getTier(balance);
         walletState.textContent = "Success";
         walletState.className = "ok";
@@ -729,22 +728,26 @@
           tierStatus.textContent = `${tier.name} (${tier.weight})`;
           eligibilityStatus.textContent = "Balance qualifies";
           eligibilityStatus.className = "ok";
-          checkerNote.textContent = "Balance threshold met. Holding-time, sell-cooldown, and wallet-cluster checks still require the official snapshot process.";
+          checkerNote.textContent = `Balance threshold met. Backend status: ${result.status}. Holding-time, sell-cooldown, and wallet-cluster checks still require the official snapshot process.`;
         } else {
           tierStatus.textContent = "Below Scout";
           eligibilityStatus.textContent = "Needs 100K+";
           eligibilityStatus.className = "bad";
-          checkerNote.textContent = "This wallet is below the proposed minimum for future Trench Drops.";
+          checkerNote.textContent = result.status === "zero_balance"
+            ? "Wallet read succeeded. This wallet has 0 $TRENCH right now."
+            : "This wallet is below the proposed minimum for future Trench Drops.";
         }
       } catch (error) {
         console.error(error);
-        walletState.textContent = "Error";
+        walletState.textContent = error.status === "invalid_wallet" ? "Invalid" : "Backend issue";
         walletState.className = "bad";
         balanceStatus.textContent = "--";
         tierStatus.textContent = "--";
         eligibilityStatus.textContent = "Retry";
         eligibilityStatus.className = "bad";
-        checkerNote.textContent = "Could not read this wallet. Check the address, then try again. Public RPCs can rate-limit during heavy traffic.";
+        checkerNote.textContent = error.status === "invalid_wallet"
+          ? "That does not look like a valid Solana wallet address."
+          : "The backend could not read Solana balance data right now. Try again in a minute; this does not affect your wallet or funds.";
       }
     }
 
@@ -800,7 +803,7 @@
         return;
       }
       try {
-        new PublicKey(address);
+        if (!isLikelySolanaAddress(address)) throw new Error("invalid_wallet");
       } catch {
         walletState.textContent = "Invalid address";
         walletState.className = "bad";
