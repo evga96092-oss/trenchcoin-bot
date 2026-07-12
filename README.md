@@ -116,6 +116,19 @@ The widget answers only from fixed official knowledge. It does not generate free
 - `POST /api/widget/ask` with `{ "question": "Buy $TRENCH" }`
 - `GET /api/price`
 - `GET /api/leaderboard`
+- `GET /api/holders` — indexed total when Helius is configured; never estimates
+- `GET /api/liquidity` — pool discovery with conservative verification status
+- `GET /api/telegram/members` — cached official Bot API member count
+- `GET /api/telegram/diagnostics` — precise setup/API failure state, no token exposure
+- `GET /api/diagnostics` — secret-safe integration readiness and deployed commit
+
+## Production integration setup
+
+Holder count uses a replaceable provider boundary (`HOLDER_PROVIDER`). The implemented provider is Helius DAS. Create a Helius free-tier key, add `HOLDER_PROVIDER=helius` and `HELIUS_API_KEY=<key>` to Railway, then redeploy. Results are cached for `HOLDER_CACHE_TTL_MS`. Active holders are intentionally not shown: no transfer-activity index with a defensible time window is configured.
+
+For Telegram, add the bot to the target group, then add `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` to Railway. For a public group the chat ID can be `@username`. For a private supergroup, temporarily message the group, call `https://api.telegram.org/bot<TOKEN>/getUpdates`, and copy the negative `chat.id` (normally beginning `-100`). Remove the token from browser history afterward and use `/api/telegram/diagnostics` to distinguish an invalid token, missing chat, absent bot, or permissions error. The token remains backend-only.
+
+Liquidity pool addresses are discovered live through DexScreener, but discovery labels are not proof of LP burn or lock. `/api/liquidity` therefore reports burned/locked/creator-controlled percentages as `null` until a DEX-specific on-chain account decoder verifies those facts.
 
 ## Deploy Notes
 

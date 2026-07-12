@@ -866,11 +866,11 @@
 
     function renderHolders(data) {
       const holders = data?.holders || {};
-      holderTotal.textContent = holders.totalHolders ?? "Requires holder indexer";
-      holderActive.textContent = holders.activeHolders24h ?? "Requires activity indexer";
+      holderTotal.textContent = holders.totalHolders ?? (holders.message || "Configuration required");
+      holderActive.textContent = holders.activeHolders ?? "Unable to verify";
       whaleCount.textContent = Number.isFinite(Number(holders.whaleCount)) ? String(holders.whaleCount) : "Unavailable";
       top10Percent.textContent = Number.isFinite(Number(holders.top10Percent)) ? `${holders.top10Percent}%` : "Unavailable";
-      holderNote.textContent = holders.definition || "Holder stats require an indexed Solana data provider.";
+      holderNote.textContent = `${holders.activeHolderDefinition || holders.definition || holders.message || "Holder stats require an indexed Solana data provider."} Source: ${holders.source || "Solana RPC"}${holders.updatedAt ? ` · ${new Date(holders.updatedAt).toLocaleString()}` : ""}`;
     }
 
     function renderLeaderboard(rows = []) {
@@ -887,7 +887,7 @@
         renderMarket(data);
         renderMint(data);
         renderHolders(data);
-        telegramStatus.textContent = data.telegram?.status === "bot_configured" ? "Join link + bot configured" : "Join link active";
+        telegramStatus.textContent = Number.isFinite(data.telegram?.memberCount) ? `${data.telegram.memberCount.toLocaleString()} verified members` : (data.telegram?.message || "Configuration required");
       } catch (error) {
         console.error(error);
         marketSource.textContent = "Dashboard API unavailable. Static official links remain usable.";

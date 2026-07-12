@@ -11,6 +11,9 @@ import { config } from "../config.js";
 import { isValidSolanaAddress, getTrenchBalance, explorerAddressUrl, getMintVerification, getHolderSnapshot } from "../services/solana.js";
 import { createWalletChallenge, completeWalletChallenge } from "../services/identity.js";
 import { db } from "../db/index.js";
+import { getIndexedHolderCount } from "../services/holders.js";
+import { getTelegramMemberCount } from "../services/telegram.js";
+import { getLiquidityVerification } from "../services/liquidity.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.resolve(__dirname, "../../public");
@@ -79,14 +82,22 @@ export function createServer() {
   });
 
   app.get("/api/holders", async (_req, res) => {
-    res.json(await getHolderSnapshot());
+    const [indexed, distribution] = await Promise.all([getIndexedHolderCount(), getHolderSnapshot()]);
+    res.json({ ...distribution, ...indexed, distribution });
   });
 
+  app.get("/api/telegram/members", async (_req, res) => res.json(await getTelegramMemberCount()));
+  app.get("/api/telegram/diagnostics", async (_req, res) => res.json(await getTelegramMemberCount({ force: true })));
+  app.get("/api/liquidity", async (_req, res) => res.json(await getLiquidityVerification()));
+
   app.get("/api/dashboard", async (_req, res) => {
-    const [marketData, mint, holders] = await Promise.all([
+    const [marketData, mint, distribution, indexedHolders, telegram, liquidity] = await Promise.all([
       getMarketData(),
       getMintVerification(),
-      getHolderSnapshot()
+      getHolderSnapshot(),
+      getIndexedHolderCount(),
+      getTelegramMemberCount(),
+      getLiquidityVerification()
     ]);
     res.json({
       tokenName: OFFICIAL.tokenName,
@@ -95,19 +106,15 @@ export function createServer() {
       links: OFFICIAL,
       marketData,
       mint,
-      holders,
+      holders: { ...distribution, ...indexedHolders, distribution },
+      liquidity,
       staking: {
         status: "preview",
         enabled: false,
         reason: "No verified deployed production staking program or IDL is configured.",
         requirements: ["verified deployed program", "IDL", "program authority review", "devnet transaction tests", "independent security review"]
       },
-      telegram: {
-        status: config.telegramBotToken && config.telegramEnabled ? "bot_configured" : "join_link_only",
-        joinUrl: OFFICIAL.telegram,
-        memberCount: null,
-        note: "Live private-group counts are not shown without a supported Telegram API integration."
-      },
+      telegram: { ...telegram, joinUrl: OFFICIAL.telegram },
       updatedAt: new Date().toISOString()
     });
   });
@@ -149,6 +156,22 @@ export function createServer() {
     staking: config.solanaCluster === "devnet" ? "devnet-preview" : "preview",
     financialDistributions: "manual-approval-required"
   }));
+
+  app.get("/api/diagnostics", async (_req, res) => {
+    const [holders, telegram, liquidity] = await Promise.all([getIndexedHolderCount(), getTelegramMemberCount(), getLiquidityVerification()]);
+    let database = false; try { database = db.prepare("SELECT 1 ok").get().ok === 1; } catch {}
+    res.json({
+      checkedAt: new Date().toISOString(), version: process.env.npm_package_version || "0.1.0", commitSha: config.commitSha,
+      integrations: {
+        solanaRpc: { configured: Boolean(config.solanaRpcUrl), cluster: config.solanaCluster },
+        holderProvider: { configured: Boolean(config.heliusApiKey), provider: config.holderProvider, status: holders.status },
+        dexScreener: { configured: true }, liquidityVerification: { status: liquidity.status },
+        telegram: { tokenConfigured: Boolean(config.telegramBotToken), chatConfigured: Boolean(config.telegramChatId), status: telegram.status },
+        staking: { enabled: false, programConfigured: Boolean(config.stakingProgramId), idlConfigured: false, network: config.solanaCluster, status: "production_disabled" },
+        database: { configured: Boolean(config.databasePath), working: database }
+      }
+    });
+  });
 
   return app;
 }
