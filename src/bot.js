@@ -114,6 +114,10 @@ export function createBot() {
 
   bot.command("help", (ctx) => ctx.reply(helpText(botUsername(ctx))));
 
+  // Returns only the current chat's Telegram identifier. This is safe for
+  // setup diagnostics and avoids exposing the bot token or other secrets.
+  bot.command("chatid", (ctx) => ctx.reply(`Telegram chat ID: ${ctx.chat.id}\nType: ${ctx.chat.type}\nTitle: ${ctx.chat.title || "private chat"}`));
+
   bot.command("price", async (ctx) => {
     const marketData = await getMarketData();
     return ctx.reply(tokenDashboardText(marketData));
