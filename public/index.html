@@ -484,18 +484,20 @@
         <article class="panel">
           <h3 class="green">$TRENCH Stats</h3>
           <div class="data-list">
-            <div class="data-row"><span>Price</span><strong id="priceStatus">Data feed pending</strong></div>
-            <div class="data-row"><span>Market Cap</span><strong>Unavailable</strong></div>
-            <div class="data-row"><span>Liquidity</span><strong>Unavailable</strong></div>
-            <div class="data-row"><span>24H Volume</span><strong>Unavailable</strong></div>
+            <div class="data-row"><span>Price</span><strong id="priceStatus">Loading…</strong></div>
+            <div class="data-row"><span>Market Cap</span><strong id="marketCapStatus">Loading…</strong></div>
+            <div class="data-row"><span>Liquidity</span><strong id="liquidityStatus">Loading…</strong></div>
+            <div class="data-row"><span>24H Volume</span><strong id="volumeStatus">Loading…</strong></div>
+            <div class="data-row"><span>24H Change</span><strong id="changeStatus">Loading…</strong></div>
           </div>
-          <div class="chart" aria-label="Chart placeholder for future real market data"></div>
+          <p id="marketSource" class="muted">Market data source loading.</p>
+          <div id="marketChart" class="chart" aria-label="Market data visual status"></div>
         </article>
 
         <article class="panel">
           <h3 class="green">Telegram Ops</h3>
           <p class="muted">Join the official trench for real-time intel, memes, and support.</p>
-          <div class="data-row"><span>Member count</span><strong>Source unavailable</strong></div>
+          <div class="data-row"><span>Live count</span><strong id="telegramStatus">Join link active</strong></div>
           <a class="btn gold" href="https://t.me/+_ct7Uyx2-C1kYzYx" style="margin-top:14px">Join Telegram</a>
         </article>
       </section>
@@ -505,11 +507,12 @@
           <article class="panel">
             <h2>Holder Status</h2>
             <div class="data-list">
-              <div class="data-row"><span>Total Holders</span><strong>Data feed pending</strong></div>
-              <div class="data-row"><span>Active (24H)</span><strong>Unavailable</strong></div>
-              <div class="data-row"><span>Whales</span><strong>Unavailable</strong></div>
-              <div class="data-row"><span>Distribution</span><strong class="warn">Awaiting real feed</strong></div>
+              <div class="data-row"><span>Unique Holders</span><strong id="holderTotal">Needs indexer</strong></div>
+              <div class="data-row"><span>Active (24H)</span><strong id="holderActive">Needs indexer</strong></div>
+              <div class="data-row"><span>Whales</span><strong id="whaleCount">Loading…</strong></div>
+              <div class="data-row"><span>Top 10 Concentration</span><strong id="top10Percent" class="warn">Loading…</strong></div>
             </div>
+            <p id="holderNote" class="muted">Loading largest-account snapshot from Solana RPC.</p>
             <div class="bars" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
           </article>
 
@@ -517,9 +520,12 @@
             <h2>Official Mint</h2>
             <div class="data-list">
               <div class="data-row"><span>Mint</span><strong>H57t...pump</strong></div>
-              <div class="data-row"><span>Mint Revoked</span><strong class="warn">Not verified here</strong></div>
-              <div class="data-row"><span>LP Burned</span><strong class="warn">Not verified here</strong></div>
-              <div class="data-row"><span>Tax</span><strong class="warn">Not applicable / unverified</strong></div>
+              <div class="data-row"><span>Mint Authority</span><strong id="mintAuthority" class="warn">Loading…</strong></div>
+              <div class="data-row"><span>Freeze Authority</span><strong id="freezeAuthority" class="warn">Loading…</strong></div>
+              <div class="data-row"><span>Token Program</span><strong id="tokenProgram">Loading…</strong></div>
+              <div class="data-row"><span>Decimals</span><strong id="mintDecimals">Loading…</strong></div>
+              <div class="data-row"><span>LP Status</span><strong id="lpStatus" class="warn">Loading…</strong></div>
+              <div class="data-row"><span>Tax</span><strong id="taxStatus" class="warn">Loading…</strong></div>
             </div>
             <div class="inline-row" style="margin-top:14px">
               <button class="copy" type="button" data-copy-ca>Copy CA</button>
@@ -551,10 +557,10 @@
         <article class="panel">
           <h2>Mission Feed</h2>
           <div class="mission-list">
-            <div class="mission"><span class="led"></span><span>Production site linked to GitHub → Netlify pipeline.</span><span>verified</span></div>
-            <div class="mission"><span class="led"></span><span>Railway backend reports healthy mainnet-beta preview mode.</span><span>verified</span></div>
-            <div class="mission warn"><span class="led"></span><span>Staking remains preview-only until program deployment/configuration.</span><span>preview</span></div>
-            <div class="mission"><span class="led"></span><span>Official CA and links locked to project references.</span><span>active</span></div>
+            <div class="mission"><span class="led"></span><span>Project update: production site uses GitHub → Netlify deployment.</span><span>source: repo</span></div>
+            <div class="mission"><span class="led"></span><span>Project update: wallet checks use backend Solana balance reads.</span><span>source: API</span></div>
+            <div class="mission warn"><span class="led"></span><span>Project update: staking remains preview-only until program deployment/configuration.</span><span>source: config</span></div>
+            <div class="mission"><span class="led"></span><span>Project update: official CA and links locked to project references.</span><span>source: constants</span></div>
           </div>
         </article>
       </section>
@@ -562,13 +568,13 @@
       <section class="stack">
         <article class="panel" id="leaderboard">
           <h2>Leaderboard</h2>
-          <p class="muted">Leaderboard UI is ready; real rankings need a connected, privacy-safe source.</p>
+          <p class="muted">Leaderboard uses the bot XP/referral database when users opt in. Empty means no recorded public rankings yet.</p>
           <div class="data-list">
-            <div class="data-row"><span>#1</span><strong>Preview pending</strong></div>
-            <div class="data-row"><span>#2</span><strong>Preview pending</strong></div>
-            <div class="data-row"><span>#3</span><strong>Preview pending</strong></div>
+            <div class="data-row"><span>#1</span><strong id="leader1">Loading…</strong></div>
+            <div class="data-row"><span>#2</span><strong id="leader2">Loading…</strong></div>
+            <div class="data-row"><span>#3</span><strong id="leader3">Loading…</strong></div>
           </div>
-          <button class="btn gold" type="button" data-bot-question="leaderboard">View Full Board</button>
+          <button id="viewLeaderboardBtn" class="btn gold" type="button">View Full Board</button>
         </article>
 
         <article class="panel">
@@ -576,8 +582,9 @@
           <div class="donut-wrap">
             <div class="donut" aria-hidden="true"></div>
             <div class="data-list">
-              <div class="data-row"><span>Total Supply</span><strong>1B target / verify on-chain</strong></div>
-              <div class="data-row"><span>Allocation</span><strong class="warn">Breakdown pending</strong></div>
+              <div class="data-row"><span>Total Supply</span><strong id="supplyStatus">Loading…</strong></div>
+              <div class="data-row"><span>Circulating</span><strong class="warn">No reliable source</strong></div>
+              <div class="data-row"><span>Allocation</span><strong class="warn">Not published</strong></div>
               <div class="data-row"><span>CEX</span><strong class="warn">Not configured</strong></div>
             </div>
           </div>
@@ -586,7 +593,7 @@
         <article class="panel">
           <h2>QRF Protocol</h2>
           <div class="data-list">
-            <div class="data-row"><span>Wallet checks</span><strong class="ok">Public-chain data</strong></div>
+            <div class="data-row"><span>Wallet checks</span><strong class="ok">Backend Solana read</strong></div>
             <div class="data-row"><span>Spending tx</span><strong class="ok">Not requested</strong></div>
             <div class="data-row"><span>Seed phrase</span><strong class="ok">Never requested</strong></div>
             <div class="data-row"><span>Audit claim</span><strong class="warn">No formal audit listed</strong></div>
@@ -607,9 +614,12 @@
       <article class="panel" id="docs">
         <h2>Docs</h2>
         <ul>
+          <li>How to buy: use the official Pump.fun page linked on this site.</li>
+          <li>Wallet checks: read-only balance lookups; no spending transaction is requested.</li>
           <li>Roadmap: wallet checks live; staking preview live; token locking awaits program configuration.</li>
           <li>Transparency: use only official website, X, Telegram, Coinbase price page, and Pump.fun link.</li>
           <li>Creator, reward, and claim-wallet details are tracked in project records and should be verified before publishing.</li>
+          <li>FAQ: staking is not live until a deployed program, IDL, tests, and review are configured.</li>
         </ul>
       </article>
       <article class="panel">
@@ -657,6 +667,30 @@
     const stakeLaneStatus = $("#stakeLaneStatus");
     const stakeAmountInput = $("#stakeAmountInput");
     const stakeNote = $("#stakeNote");
+    const priceStatus = $("#priceStatus");
+    const marketCapStatus = $("#marketCapStatus");
+    const liquidityStatus = $("#liquidityStatus");
+    const volumeStatus = $("#volumeStatus");
+    const changeStatus = $("#changeStatus");
+    const marketSource = $("#marketSource");
+    const marketChart = $("#marketChart");
+    const telegramStatus = $("#telegramStatus");
+    const holderTotal = $("#holderTotal");
+    const holderActive = $("#holderActive");
+    const whaleCount = $("#whaleCount");
+    const top10Percent = $("#top10Percent");
+    const holderNote = $("#holderNote");
+    const mintAuthority = $("#mintAuthority");
+    const freezeAuthority = $("#freezeAuthority");
+    const tokenProgram = $("#tokenProgram");
+    const mintDecimals = $("#mintDecimals");
+    const lpStatus = $("#lpStatus");
+    const taxStatus = $("#taxStatus");
+    const leader1 = $("#leader1");
+    const leader2 = $("#leader2");
+    const leader3 = $("#leader3");
+    const supplyStatus = $("#supplyStatus");
+    const navLinks = Array.from(document.querySelectorAll(".nav a"));
 
     function compactAddress(address) {
       return `${address.slice(0, 4)}...${address.slice(-4)}`;
@@ -664,6 +698,17 @@
 
     function formatNumber(value) {
       return new Intl.NumberFormat("en-US", { maximumFractionDigits: value >= 1 ? 2 : 6 }).format(value);
+    }
+
+    function formatUsd(value, options = {}) {
+      if (!Number.isFinite(Number(value))) return "Unavailable";
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: options.compact ? 2 : 8, notation: options.compact ? "compact" : "standard" }).format(Number(value));
+    }
+
+    function formatPercent(value) {
+      if (!Number.isFinite(Number(value))) return "Unavailable";
+      const number = Number(value);
+      return `${number > 0 ? "+" : ""}${number.toFixed(2)}%`;
     }
 
     function getTier(balance) {
@@ -678,16 +723,18 @@
       return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
     }
 
-    async function fetchTrenchBalance(walletAddress) {
-      const response = await fetch(`${getBackendUrl()}/api/wallet/${encodeURIComponent(walletAddress)}/balance`, {
-        headers: { "accept": "application/json" }
-      });
+    async function fetchJson(path) {
+      const response = await fetch(`${getBackendUrl()}${path}`, { headers: { "accept": "application/json" } });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const error = new Error(payload.error || payload.status || "balance_lookup_failed");
-        error.status = payload.status || "rpc_unavailable";
+      if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+      return payload;
+    }
+
+    async function fetchTrenchBalance(walletAddress) {
+      const payload = await fetchJson(`/api/wallet/${encodeURIComponent(walletAddress)}/balance`).catch((error) => {
+        error.status = "rpc_unavailable";
         throw error;
-      }
+      });
       return {
         balance: Number(payload.balanceUi ?? 0),
         status: payload.status || "unknown",
@@ -785,13 +832,101 @@
         : "Below the proposed 100K minimum. Add more $TRENCH to reach the first staking lane.";
     }
 
-    document.querySelectorAll("[data-copy-ca]").forEach((button) => {
-      button.addEventListener("click", async () => {
-        await navigator.clipboard.writeText(MINT);
-        const original = button.textContent;
-        button.textContent = "Copied";
-        window.setTimeout(() => { button.textContent = original; }, 1400);
+    function renderMarket(data) {
+      const market = data?.marketData || {};
+      priceStatus.textContent = formatUsd(market.priceUsd);
+      marketCapStatus.textContent = formatUsd(market.marketCapUsd, { compact: true });
+      liquidityStatus.textContent = formatUsd(market.liquidityUsd, { compact: true });
+      volumeStatus.textContent = formatUsd(market.volume24hUsd, { compact: true });
+      changeStatus.textContent = formatPercent(market.priceChange24hPct);
+      changeStatus.className = Number(market.priceChange24hPct) >= 0 ? "ok" : "bad";
+      marketSource.textContent = market.status === "unavailable"
+        ? `Market data unavailable from ${market.source || "configured source"}.`
+        : `Source: ${market.source || "market API"} · ${market.cache || "live"} · ${market.updatedAt ? new Date(market.updatedAt).toLocaleString() : "just now"}`;
+      if (market.sourceUrl) {
+        marketChart.innerHTML = `<a class="btn gold" href="${market.sourceUrl}" target="_blank" rel="noopener noreferrer">Open live chart</a>`;
+      } else {
+        marketChart.textContent = "Historical chart unavailable from current source.";
+      }
+    }
+
+    function renderMint(data) {
+      const mint = data?.mint || {};
+      const supply = mint.totalSupplyUi ? Number(mint.totalSupplyUi) : null;
+      mintAuthority.textContent = mint.mintAuthorityStatus || "Unknown";
+      mintAuthority.className = mint.mintAuthorityStatus === "revoked" ? "ok" : "warn";
+      freezeAuthority.textContent = mint.freezeAuthorityStatus || "Unknown";
+      freezeAuthority.className = mint.freezeAuthorityStatus === "revoked" ? "ok" : "warn";
+      tokenProgram.textContent = mint.tokenProgram ? compactAddress(mint.tokenProgram) : "Unknown";
+      mintDecimals.textContent = mint.decimals ?? "Unknown";
+      lpStatus.textContent = mint.lpStatus || "Unable to verify automatically";
+      taxStatus.textContent = mint.taxStatus || "Not applicable / unverified";
+      supplyStatus.textContent = Number.isFinite(supply) ? `${formatNumber(supply)} $TRENCH` : "Unavailable";
+    }
+
+    function renderHolders(data) {
+      const holders = data?.holders || {};
+      holderTotal.textContent = holders.totalHolders ?? "Requires holder indexer";
+      holderActive.textContent = holders.activeHolders24h ?? "Requires activity indexer";
+      whaleCount.textContent = Number.isFinite(Number(holders.whaleCount)) ? String(holders.whaleCount) : "Unavailable";
+      top10Percent.textContent = Number.isFinite(Number(holders.top10Percent)) ? `${holders.top10Percent}%` : "Unavailable";
+      holderNote.textContent = holders.definition || "Holder stats require an indexed Solana data provider.";
+    }
+
+    function renderLeaderboard(rows = []) {
+      const slots = [leader1, leader2, leader3];
+      slots.forEach((slot, index) => {
+        const row = rows[index];
+        slot.textContent = row ? `${row.display_name || row.username || `Trencher-${index + 1}`} · ${row.xp || 0} XP` : "No public entry yet";
       });
+    }
+
+    async function loadDashboard() {
+      try {
+        const data = await fetchJson("/api/dashboard");
+        renderMarket(data);
+        renderMint(data);
+        renderHolders(data);
+        telegramStatus.textContent = data.telegram?.status === "bot_configured" ? "Join link + bot configured" : "Join link active";
+      } catch (error) {
+        console.error(error);
+        marketSource.textContent = "Dashboard API unavailable. Static official links remain usable.";
+        [priceStatus, marketCapStatus, liquidityStatus, volumeStatus, changeStatus, whaleCount, top10Percent, supplyStatus].forEach((element) => { element.textContent = "Unavailable"; });
+      }
+      try {
+        const data = await fetchJson("/api/leaderboard");
+        renderLeaderboard(data.leaderboard || []);
+      } catch {
+        renderLeaderboard([]);
+      }
+    }
+
+    async function copyText(value, button) {
+      const original = button.textContent;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(value);
+        } else {
+          const textArea = document.createElement("textarea");
+          textArea.value = value;
+          textArea.setAttribute("readonly", "");
+          textArea.style.position = "fixed";
+          textArea.style.opacity = "0";
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand("copy");
+          textArea.remove();
+        }
+        button.textContent = "Copied";
+      } catch {
+        button.textContent = "Copy failed";
+      } finally {
+        window.setTimeout(() => { button.textContent = original; }, 1400);
+      }
+    }
+
+    document.querySelectorAll("[data-copy-ca]").forEach((button) => {
+      button.addEventListener("click", () => copyText(MINT, button));
     });
 
     $("#connectBtn").addEventListener("click", connectWallet);
@@ -816,12 +951,21 @@
       stakeNote.textContent = "Queue intent noted locally. Join Telegram for staking announcements before signing anything.";
       window.location.hash = "operations";
     });
+    $("#viewLeaderboardBtn").addEventListener("click", () => {
+      window.location.hash = "leaderboard";
+      window.dispatchEvent(new CustomEvent("trench:bot-question", { detail: "leaderboard" }));
+    });
 
     document.querySelectorAll("[data-bot-question]").forEach((button) => {
       button.addEventListener("click", () => {
         window.dispatchEvent(new CustomEvent("trench:bot-question", { detail: button.dataset.botQuestion }));
       });
     });
+    window.addEventListener("hashchange", () => {
+      const active = window.location.hash || "#dashboard";
+      navLinks.forEach((link) => link.classList.toggle("active", link.getAttribute("href") === active));
+    });
+    loadDashboard();
   </script>
   <script src="/config.js"></script>
   <script src="/widget.js"></script>

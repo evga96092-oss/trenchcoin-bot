@@ -8,7 +8,7 @@ import { getMarketData } from "../services/marketData.js";
 import { tokenDashboardText } from "../utils/format.js";
 import { answerQuestion, widgetOptions } from "./knowledge.js";
 import { config } from "../config.js";
-import { isValidSolanaAddress, getTrenchBalance, explorerAddressUrl } from "../services/solana.js";
+import { isValidSolanaAddress, getTrenchBalance, explorerAddressUrl, getMintVerification, getHolderSnapshot } from "../services/solana.js";
 import { createWalletChallenge, completeWalletChallenge } from "../services/identity.js";
 import { db } from "../db/index.js";
 
@@ -70,7 +70,45 @@ export function createServer() {
       ca: OFFICIAL.ca,
       text: tokenDashboardText(marketData),
       marketData,
-      status: marketData ? "live" : "pending"
+      status: marketData?.status || "unavailable"
+    });
+  });
+
+  app.get("/api/mint", async (_req, res) => {
+    res.json(await getMintVerification());
+  });
+
+  app.get("/api/holders", async (_req, res) => {
+    res.json(await getHolderSnapshot());
+  });
+
+  app.get("/api/dashboard", async (_req, res) => {
+    const [marketData, mint, holders] = await Promise.all([
+      getMarketData(),
+      getMintVerification(),
+      getHolderSnapshot()
+    ]);
+    res.json({
+      tokenName: OFFICIAL.tokenName,
+      ticker: OFFICIAL.ticker,
+      ca: OFFICIAL.ca,
+      links: OFFICIAL,
+      marketData,
+      mint,
+      holders,
+      staking: {
+        status: "preview",
+        enabled: false,
+        reason: "No verified deployed production staking program or IDL is configured.",
+        requirements: ["verified deployed program", "IDL", "program authority review", "devnet transaction tests", "independent security review"]
+      },
+      telegram: {
+        status: config.telegramBotToken && config.telegramEnabled ? "bot_configured" : "join_link_only",
+        joinUrl: OFFICIAL.telegram,
+        memberCount: null,
+        note: "Live private-group counts are not shown without a supported Telegram API integration."
+      },
+      updatedAt: new Date().toISOString()
     });
   });
 

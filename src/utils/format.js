@@ -56,11 +56,12 @@ export function tokenDashboardText(marketData = null) {
   }
 
   lines.push(
-    `Price: ${marketData.price ?? "pending"}`,
-    `Market cap: ${marketData.marketCap ?? "pending"}`,
-    `Liquidity: ${marketData.liquidity ?? "pending"}`,
-    `Volume: ${marketData.volume ?? "pending"}`,
-    `Holders: ${marketData.holders ?? "pending"}`
+    `Price: ${marketData.priceUsd ?? marketData.price ?? "unavailable"} USD`,
+    `Market cap: ${marketData.marketCapUsd ?? marketData.marketCap ?? "unavailable"} USD`,
+    `Liquidity: ${marketData.liquidityUsd ?? marketData.liquidity ?? "unavailable"} USD`,
+    `24H Volume: ${marketData.volume24hUsd ?? marketData.volume ?? "unavailable"} USD`,
+    `24H Change: ${marketData.priceChange24hPct ?? "unavailable"}%`,
+    `Source: ${marketData.source ?? "configured API"}`
   );
   return lines.join("\n");
 }

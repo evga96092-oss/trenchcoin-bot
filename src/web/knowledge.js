@@ -2,13 +2,18 @@ import { OFFICIAL } from "../constants.js";
 
 export const widgetOptions = [
   "Buy $TRENCH",
-  "What is $TRENCH?",
-  "How to join Telegram",
-  "How to stake",
+  "Official CA",
+  "Wallet check",
+  "Market stats",
+  "Staking status",
+  "Holder status",
+  "Mission intel",
+  "Security check",
+  "Join Telegram",
   "Official links",
-  "Token address",
-  "Roadmap",
-  "FAQ"
+  "View roadmap",
+  "Report issue",
+  "Help"
 ];
 
 export function answerQuestion(input = "") {
@@ -28,10 +33,30 @@ export function answerQuestion(input = "") {
 
   if (question.includes("stake")) {
     return [
-      "Staking program is deployed on Solana devnet.",
-      "Mainnet staking is not live yet unless manually updated later.",
-      `Devnet Program ID: ${OFFICIAL.devnetStakingProgramId}`
+      "Staking status: preview-only.",
+      "No production staking transactions, APY, token locking, reward claims, or claim buttons are live.",
+      "Launch requires a verified deployed program, IDL, account configuration, tests, and independent review."
     ].join("\n");
+  }
+
+  if (question.includes("wallet")) {
+    return "Wallet Check is read-only. Connect Phantom or paste a public Solana address on the dashboard to read public $TRENCH balance. It does not request a spending transaction.";
+  }
+
+  if (question.includes("market") || question.includes("price")) {
+    return "Market stats load from the dashboard API. If DexScreener has a Solana pair for $TRENCH, the dashboard shows price, market cap, liquidity, volume, and 24h change.";
+  }
+
+  if (question.includes("holder")) {
+    return "Holder status uses a limited Solana largest-account snapshot. Unique holder and 24h active holder counts require an indexed holder provider and are not fabricated.";
+  }
+
+  if (question.includes("mission") || question.includes("intel")) {
+    return "Mission intel is a curated project-update feed, not fake real-time on-chain activity. It shows source labels for repo, API, config, and official references.";
+  }
+
+  if (question.includes("security")) {
+    return "Security check: verify the official CA, never share a seed phrase, ignore fake support DMs, and remember the dashboard wallet check is read-only.";
   }
 
   if (question.includes("link") || question.includes("official")) {
@@ -48,11 +73,15 @@ export function answerQuestion(input = "") {
   }
 
   if (question.includes("roadmap")) {
-    return "Launch focus: Telegram bot, website widget, token dashboard, holder verification, missions, referrals, and leaderboard foundation.";
+    return "Roadmap: live official links, read-only wallet checks, real market/mint/supply panels, honest staking preview, Telegram ops, and leaderboard infrastructure.";
   }
 
-  if (question.includes("faq")) {
-    return "Use the quick options for official links, token address, staking status, and how to join the Telegram.";
+  if (question.includes("report")) {
+    return `Report issues in the official Telegram and include browser, wallet type, and what action failed: ${OFFICIAL.telegram}`;
+  }
+
+  if (question.includes("faq") || question.includes("help")) {
+    return "Try: Buy $TRENCH, Official CA, Wallet check, Market stats, Staking status, Holder status, Mission intel, Security check, Join Telegram, View roadmap, or Report issue.";
   }
 
   return "I only answer from official Trenchcoin info. Try: Buy $TRENCH, official links, token address, Telegram, staking, roadmap, or FAQ.";

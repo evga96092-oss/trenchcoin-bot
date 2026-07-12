@@ -50,6 +50,14 @@ async function rpc(method, params) {
   return payload.result;
 }
 
+function rawToUiAmount(raw, decimals) {
+  const places = decimals ?? 0;
+  const base = 10n ** BigInt(places);
+  const whole = raw / base;
+  const fraction = (raw % base).toString().padStart(places, "0").replace(/0+$/, "");
+  return fraction ? `${whole}.${fraction}` : whole.toString();
+}
+
 export async function getTrenchBalance(walletAddress) {
   if (!isValidSolanaAddress(walletAddress)) return { status: "invalid_wallet" };
   const mint = config.trenchMint || OFFICIAL.ca;
@@ -65,12 +73,88 @@ export async function getTrenchBalance(walletAddress) {
       decimals = amount.decimals;
     }
     const places = decimals ?? 6;
-    const base = 10n ** BigInt(places);
-    const whole = raw / base;
-    const fraction = (raw % base).toString().padStart(places, "0").replace(/0+$/, "");
-    return { status: raw === 0n ? "zero_balance" : "verified", balanceRaw: raw.toString(), balanceUi: fraction ? `${whole}.${fraction}` : whole.toString(), decimals: places, slot: result.context?.slot ?? null, mint, cluster: config.solanaCluster };
+    return { status: raw === 0n ? "zero_balance" : "verified", balanceRaw: raw.toString(), balanceUi: rawToUiAmount(raw, places), decimals: places, slot: result.context?.slot ?? null, mint, cluster: config.solanaCluster };
   } catch (error) {
     return { status: "rpc_unavailable", error: error.message, mint, cluster: config.solanaCluster };
+  }
+}
+
+export async function getMintVerification() {
+  const mint = config.trenchMint || OFFICIAL.ca;
+  if (!isValidSolanaAddress(mint)) return { status: "invalid_mint", mint, cluster: config.solanaCluster };
+  try {
+    const [account, supply] = await Promise.all([
+      rpc("getParsedAccountInfo", [mint, { commitment: "confirmed" }]),
+      rpc("getTokenSupply", [mint, { commitment: "confirmed" }])
+    ]);
+    const parsed = account.value?.data?.parsed;
+    const info = parsed?.info || {};
+    const tokenSupply = supply.value || {};
+    return {
+      status: "verified",
+      source: "Solana RPC",
+      checkedAt: new Date().toISOString(),
+      slot: account.context?.slot ?? supply.context?.slot ?? null,
+      mint,
+      cluster: config.solanaCluster,
+      tokenProgram: account.value?.owner || "unknown",
+      decimals: tokenSupply.decimals ?? info.decimals ?? null,
+      totalSupplyRaw: tokenSupply.amount ?? null,
+      totalSupplyUi: tokenSupply.uiAmountString ?? null,
+      mintAuthority: info.mintAuthority || null,
+      freezeAuthority: info.freezeAuthority || null,
+      mintAuthorityStatus: info.mintAuthority ? "active" : "revoked",
+      freezeAuthorityStatus: info.freezeAuthority ? "active" : "revoked",
+      explorer: explorerAddressUrl(mint),
+      lpStatus: "Unable to verify automatically",
+      taxStatus: "Not applicable to SPL token mint data"
+    };
+  } catch (error) {
+    return { status: "rpc_unavailable", source: "Solana RPC", error: error.message, mint, cluster: config.solanaCluster, checkedAt: new Date().toISOString() };
+  }
+}
+
+export async function getHolderSnapshot() {
+  const mint = config.trenchMint || OFFICIAL.ca;
+  if (!isValidSolanaAddress(mint)) return { status: "invalid_mint", mint, cluster: config.solanaCluster };
+  try {
+    const [largest, supply] = await Promise.all([
+      rpc("getTokenLargestAccounts", [mint, { commitment: "confirmed" }]),
+      rpc("getTokenSupply", [mint, { commitment: "confirmed" }])
+    ]);
+    const accounts = largest.value || [];
+    const decimals = supply.value?.decimals ?? 6;
+    const totalRaw = BigInt(supply.value?.amount || "0");
+    const top = accounts.map((entry) => {
+      const raw = BigInt(entry.amount || "0");
+      return {
+        address: entry.address,
+        amountRaw: raw.toString(),
+        amountUi: entry.uiAmountString || rawToUiAmount(raw, decimals),
+        percentOfSupply: totalRaw > 0n ? Number(raw * 10_000n / totalRaw) / 100 : null
+      };
+    });
+    const top10Pct = top.slice(0, 10).reduce((sum, entry) => sum + (entry.percentOfSupply || 0), 0);
+    const whaleThresholdPct = 1;
+    return {
+      status: "limited",
+      source: "Solana RPC getTokenLargestAccounts",
+      checkedAt: new Date().toISOString(),
+      slot: largest.context?.slot ?? supply.context?.slot ?? null,
+      mint,
+      cluster: config.solanaCluster,
+      definition: "Largest token accounts only. Unique holder count requires an indexed holder provider.",
+      totalHolders: null,
+      activeHolders24h: null,
+      whaleThreshold: ">= 1% of current supply",
+      whaleCount: top.filter((entry) => (entry.percentOfSupply || 0) >= whaleThresholdPct).length,
+      topHolderPercent: top[0]?.percentOfSupply ?? null,
+      top10Percent: Number(top10Pct.toFixed(2)),
+      topAccounts: top.slice(0, 10),
+      unavailable: ["unique_holders", "active_holders_24h", "program_owned_account_exclusions"]
+    };
+  } catch (error) {
+    return { status: "rpc_unavailable", source: "Solana RPC", error: error.message, mint, cluster: config.solanaCluster, checkedAt: new Date().toISOString() };
   }
 }
 

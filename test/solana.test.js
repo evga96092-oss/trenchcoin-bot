@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { decodeBase58, isValidSolanaAddress, verifyWalletSignature } from "../src/services/solana.js";
+import { normalizeDexScreenerResponse } from "../src/services/marketData.js";
 
 const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 function encodeBase58(buffer) {
@@ -27,4 +28,29 @@ test("verifies an Ed25519 signed challenge and rejects tampering", () => {
   const signature = encodeBase58(crypto.sign(null, Buffer.from(message), privateKey));
   assert.equal(verifyWalletSignature(address, message, signature), true);
   assert.equal(verifyWalletSignature(address, `${message}!`, signature), false);
+});
+
+test("normalizes DexScreener market data without inventing fields", () => {
+  const normalized = normalizeDexScreenerResponse({
+    pairs: [
+      { chainId: "ethereum", liquidity: { usd: 1_000_000 }, priceUsd: "2" },
+      {
+        chainId: "solana",
+        dexId: "raydium",
+        pairAddress: "pair",
+        url: "https://dexscreener.com/solana/pair",
+        priceUsd: "0.00001",
+        marketCap: 12345,
+        liquidity: { usd: 4567 },
+        volume: { h24: 789 },
+        priceChange: { h24: -1.25 }
+      }
+    ]
+  });
+  assert.equal(normalized.source, "DexScreener");
+  assert.equal(normalized.priceUsd, 0.00001);
+  assert.equal(normalized.marketCapUsd, 12345);
+  assert.equal(normalized.liquidityUsd, 4567);
+  assert.equal(normalized.volume24hUsd, 789);
+  assert.equal(normalized.priceChange24hPct, -1.25);
 });
