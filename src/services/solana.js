@@ -84,7 +84,7 @@ export async function getMintVerification() {
   if (!isValidSolanaAddress(mint)) return { status: "invalid_mint", mint, cluster: config.solanaCluster };
   try {
     const [account, supply] = await Promise.all([
-      rpc("getParsedAccountInfo", [mint, { commitment: "confirmed" }]),
+      rpc("getAccountInfo", [mint, { encoding: "jsonParsed", commitment: "confirmed" }]),
       rpc("getTokenSupply", [mint, { commitment: "confirmed" }])
     ]);
     const parsed = account.value?.data?.parsed;
