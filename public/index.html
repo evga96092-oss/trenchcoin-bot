@@ -463,22 +463,24 @@
       <section class="stack">
         <article class="panel" id="wallet-panel">
           <h2 class="green">Wallet Check</h2>
-          <p class="muted">Connect Phantom or paste a public Solana wallet. This checks public-chain $TRENCH balance only.</p>
+          <p class="muted">Connect Phantom to prove ownership with a free message signature, or paste an address for an ownership-unverified public lookup. No transaction or token approval is requested.</p>
           <div class="wallet-row">
             <input id="walletInput" class="field" autocomplete="off" spellcheck="false" placeholder="Paste wallet address">
-            <button id="connectBtn" class="copy" type="button">Connect Wallet</button>
+            <button id="connectBtn" class="copy" type="button">Connect &amp; Verify</button>
           </div>
           <div class="inline-row" style="margin-top:9px">
-            <button id="checkBtn" class="btn gold" type="button">Run Check</button>
+            <button id="checkBtn" class="btn gold" type="button">Public Lookup</button>
             <span id="walletState" class="warn">Disconnected</span>
           </div>
           <div class="mini-grid" style="margin-top:14px">
             <div class="mini"><span>Address</span><strong id="walletStatus">--</strong></div>
             <div class="mini"><span>$TRENCH Balance</span><strong id="balanceStatus">--</strong></div>
-            <div class="mini"><span>Drop Tier</span><strong id="tierStatus">--</strong></div>
-            <div class="mini"><span>Eligibility</span><strong id="eligibilityStatus">--</strong></div>
+            <div class="mini"><span>Contest Entries</span><strong id="tierStatus">--</strong></div>
+            <div class="mini"><span>Prize Eligibility</span><strong id="eligibilityStatus">--</strong></div>
+            <div class="mini"><span>Ownership</span><strong id="ownershipStatus">--</strong></div>
+            <div class="mini"><span>Checked At</span><strong id="checkedAtStatus">--</strong></div>
           </div>
-          <p id="checkerNote" class="muted">Minimum for future Trench Drops: 100,000 $TRENCH. Holding-time and sell-cooldown checks require official snapshots.</p>
+          <p id="checkerNote" class="muted">One entry per complete 1,000,000 $TRENCH, capped at 10. Wallet address, public balance, timestamp, verification status, and entry count are stored for contest administration.</p>
         </article>
 
         <article class="panel">
@@ -568,13 +570,13 @@
       <section class="stack">
         <article class="panel" id="leaderboard">
           <h2>Leaderboard</h2>
-          <p class="muted">Leaderboard uses the bot XP/referral database when users opt in. Empty means no recorded public rankings yet.</p>
+          <p class="muted">Official contest rankings include ownership-verified, eligible wallets only. Public addresses are always masked.</p>
           <div class="data-list">
             <div class="data-row"><span>#1</span><strong id="leader1">Loading…</strong></div>
             <div class="data-row"><span>#2</span><strong id="leader2">Loading…</strong></div>
             <div class="data-row"><span>#3</span><strong id="leader3">Loading…</strong></div>
           </div>
-          <button id="viewLeaderboardBtn" class="btn gold" type="button">View Full Board</button>
+          <button id="viewLeaderboardBtn" class="btn gold" type="button">Refresh Board</button>
         </article>
 
         <article class="panel">
@@ -660,6 +662,8 @@
     const balanceStatus = $("#balanceStatus");
     const tierStatus = $("#tierStatus");
     const eligibilityStatus = $("#eligibilityStatus");
+    const ownershipStatus = $("#ownershipStatus");
+    const checkedAtStatus = $("#checkedAtStatus");
     const checkerNote = $("#checkerNote");
     const stakeWalletStatus = $("#stakeWalletStatus");
     const stakeBalanceStatus = $("#stakeBalanceStatus");
@@ -691,6 +695,7 @@
     const leader3 = $("#leader3");
     const supplyStatus = $("#supplyStatus");
     const navLinks = Array.from(document.querySelectorAll(".nav a"));
+    let connectedProvider = null;
 
     function compactAddress(address) {
       return `${address.slice(0, 4)}...${address.slice(-4)}`;
@@ -698,6 +703,12 @@
 
     function formatNumber(value) {
       return new Intl.NumberFormat("en-US", { maximumFractionDigits: value >= 1 ? 2 : 6 }).format(value);
+    }
+
+    function formatTokenBalance(value) {
+      const [whole = "0", fraction = ""] = String(value ?? "0").split(".");
+      const grouped = BigInt(whole || "0").toLocaleString("en-US");
+      return fraction ? `${grouped}.${fraction}` : grouped;
     }
 
     function formatUsd(value, options = {}) {
@@ -730,16 +741,19 @@
       return payload;
     }
 
-    async function fetchTrenchBalance(walletAddress) {
-      const payload = await fetchJson(`/api/wallet/${encodeURIComponent(walletAddress)}/balance`).catch((error) => {
-        error.status = "rpc_unavailable";
-        throw error;
+    async function requestJson(path, options = {}) {
+      const response = await fetch(`${getBackendUrl()}${path}`, {
+        ...options,
+        headers: { "accept": "application/json", "content-type": "application/json", ...(options.headers || {}) }
       });
-      return {
-        balance: Number(payload.balanceUi ?? 0),
-        status: payload.status || "unknown",
-        slot: payload.slot ?? null
-      };
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(payload.error || `HTTP ${response.status}`);
+        error.status = payload.error || "server_error";
+        error.payload = payload;
+        throw error;
+      }
+      return payload;
     }
 
     function setChecking(address) {
@@ -750,6 +764,8 @@
       tierStatus.textContent = "--";
       eligibilityStatus.textContent = "--";
       eligibilityStatus.className = "";
+      ownershipStatus.textContent = "--";
+      checkedAtStatus.textContent = "--";
     }
 
     function updateStakePanel(address, balance) {
@@ -760,61 +776,100 @@
       stakeLaneStatus.className = tier ? "ok" : "warn";
     }
 
-    async function checkWallet(address) {
-      setChecking(address);
-      try {
-        const result = await fetchTrenchBalance(address);
-        const balance = result.balance;
-        const tier = getTier(balance);
-        walletState.textContent = "Success";
-        walletState.className = "ok";
-        walletStatus.textContent = compactAddress(address);
-        balanceStatus.textContent = `${formatNumber(balance)} $TRENCH`;
-        updateStakePanel(address, balance);
-        if (tier) {
-          tierStatus.textContent = `${tier.name} (${tier.weight})`;
-          eligibilityStatus.textContent = "Balance qualifies";
-          eligibilityStatus.className = "ok";
-          checkerNote.textContent = `Balance threshold met. Backend status: ${result.status}. Holding-time, sell-cooldown, and wallet-cluster checks still require the official snapshot process.`;
-        } else {
-          tierStatus.textContent = "Below Scout";
-          eligibilityStatus.textContent = "Needs 100K+";
-          eligibilityStatus.className = "bad";
-          checkerNote.textContent = result.status === "zero_balance"
-            ? "Wallet read succeeded. This wallet has 0 $TRENCH right now."
-            : "This wallet is below the proposed minimum for future Trench Drops.";
-        }
-      } catch (error) {
-        console.error(error);
-        walletState.textContent = error.status === "invalid_wallet" ? "Invalid" : "Backend issue";
-        walletState.className = "bad";
-        balanceStatus.textContent = "--";
-        tierStatus.textContent = "--";
-        eligibilityStatus.textContent = "Retry";
-        eligibilityStatus.className = "bad";
-        checkerNote.textContent = error.status === "invalid_wallet"
-          ? "That does not look like a valid Solana wallet address."
-          : "The backend could not read Solana balance data right now. Try again in a minute; this does not affect your wallet or funds.";
+    function renderContestResult(result, showFullAddress = false) {
+      const stale = result.stale || result.verificationState === "stale";
+      walletState.textContent = stale ? "Stale fallback" : "Live balance";
+      walletState.className = stale ? "warn" : "ok";
+      walletStatus.textContent = showFullAddress ? result.walletAddress : result.maskedWalletAddress;
+      balanceStatus.textContent = `${formatTokenBalance(result.balanceUi)} $TRENCH${stale ? " (stale)" : ""}`;
+      tierStatus.textContent = `${result.entries} of ${result.maxEntries}`;
+      ownershipStatus.textContent = result.ownershipStatus === "ownership_verified" ? "Verified owner" : "Public lookup only";
+      ownershipStatus.className = result.ownershipStatus === "ownership_verified" ? "ok" : "warn";
+      eligibilityStatus.textContent = result.eligibilityStatus === "eligible" ? "Eligible" : result.eligibilityStatus.replaceAll("_", " ");
+      eligibilityStatus.className = result.eligibilityStatus === "eligible" ? "ok" : "warn";
+      checkedAtStatus.textContent = result.checkedAt ? new Date(result.checkedAt).toLocaleString() : "Unavailable";
+      updateStakePanel(result.walletAddress, Number(result.balanceUi));
+      if (stale) checkerNote.textContent = "The live RPC request failed. The last successful balance is shown and clearly marked stale; entries were not reduced.";
+      else if (result.entries === 0) checkerNote.textContent = `You need ${formatTokenBalance(result.tokensPerEntry)} $TRENCH for your first contest entry. A pasted address is not proof of ownership.`;
+      else if (result.entries >= result.maxEntries) checkerNote.textContent = `You have reached the maximum of ${result.maxEntries} contest entries.`;
+      else {
+        const balanceLabel = result.ownershipStatus === "ownership_verified" ? "Your verified balance" : "The live on-chain balance";
+        checkerNote.textContent = `${balanceLabel} is ${formatTokenBalance(result.balanceUi)} $TRENCH. This wallet currently has ${result.entries} of ${result.maxEntries} contest entries. One entry is awarded per complete ${formatTokenBalance(result.tokensPerEntry)} $TRENCH.`;
       }
     }
 
+    function renderWalletError(error) {
+      const messages = {
+        invalid_wallet: "That is not a valid Solana public address.",
+        rpc_timeout: "Solana RPC timed out. Try again shortly.",
+        rpc_rate_limited: "The Solana provider is rate limited. Try again shortly.",
+        rpc_unavailable: "Live Solana balance data is unavailable. A prior successful value is never replaced with zero.",
+        rate_limited: "Too many checks. Please wait before trying again.",
+        duplicate_request: "That check is already being processed. Please wait a moment.",
+        contest_closed: "Contest check-ins are currently closed or awaiting official dates.",
+        invalid_signature: "The ownership signature was invalid. Request a new verification message.",
+        challenge_expired: "The verification message expired. Connect again for a new one.",
+        challenge_replayed: "That verification message was already used. Connect again for a new one."
+      };
+      walletState.textContent = error.status === "rate_limited" ? "Rate limited" : error.status === "contest_closed" ? "Contest closed" : "Check failed";
+      walletState.className = "bad";
+      checkerNote.textContent = messages[error.status] || "The server could not complete the check. Try again later.";
+    }
+
+    async function checkWallet(address) {
+      setChecking(address);
+      try {
+        const result = await requestJson("/api/contest/check", { method: "POST", body: JSON.stringify({ walletAddress: address }) });
+        renderContestResult(result, false);
+      } catch (error) { console.error(error); renderWalletError(error); }
+    }
+
     async function connectWallet() {
-      const provider = window.solana;
+      const provider = window.phantom?.solana?.isPhantom ? window.phantom.solana : window.solana;
       if (!provider?.isPhantom) {
         walletState.textContent = "Phantom unavailable";
         walletState.className = "bad";
         return;
       }
       try {
+        connectedProvider = provider;
         const result = await provider.connect({ onlyIfTrusted: false });
         const address = result.publicKey.toString();
         walletInput.value = address;
-        await checkWallet(address);
+        setChecking(address);
+        checkerNote.textContent = "Approve the free message signature in Phantom. It is not a transaction and cannot spend funds.";
+        const challenge = await requestJson("/api/wallet/challenge", { method: "POST", body: JSON.stringify({ walletAddress: address }) });
+        const signed = await provider.signMessage(new TextEncoder().encode(challenge.message), "utf8");
+        const signature = encodeBase58(signed.signature);
+        const verified = await requestJson("/api/wallet/verify", { method: "POST", body: JSON.stringify({ challengeId: challenge.challengeId, signature }) });
+        if (verified.contest?.error) { const error = new Error(verified.contest.error); error.status = verified.contest.error; throw error; }
+        renderContestResult(verified.contest, true);
+        if (verified.contestSession) {
+          try {
+            const mine = await requestJson("/api/contest/me", { headers: { authorization: `Bearer ${verified.contestSession}` } });
+            if (mine.rank) checkerNote.textContent += ` Your current official rank is #${mine.rank}.`;
+          } catch { /* Ownership verification remains valid if rank lookup is temporarily unavailable. */ }
+        }
       } catch (error) {
         console.error(error);
-        walletState.textContent = "Connection cancelled";
-        walletState.className = "bad";
+        if (error?.code === 4001) {
+          walletState.textContent = "Cancelled";
+          walletState.className = "warn";
+          checkerNote.textContent = "Wallet connection or message signing was cancelled. No transaction was requested.";
+        } else renderWalletError(error);
       }
+    }
+
+    function encodeBase58(bytes) {
+      const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+      let digits = [0];
+      for (const byte of bytes) {
+        let carry = byte;
+        for (let i = 0; i < digits.length; i += 1) { carry += digits[i] << 8; digits[i] = carry % 58; carry = Math.floor(carry / 58); }
+        while (carry) { digits.push(carry % 58); carry = Math.floor(carry / 58); }
+      }
+      for (let i = 0; i < bytes.length - 1 && bytes[i] === 0; i += 1) digits.push(0);
+      return digits.reverse().map((digit) => alphabet[digit]).join("");
     }
 
     function estimateStake() {
@@ -877,7 +932,7 @@
       const slots = [leader1, leader2, leader3];
       slots.forEach((slot, index) => {
         const row = rows[index];
-        slot.textContent = row ? `${row.display_name || row.username || `Trencher-${index + 1}`} · ${row.xp || 0} XP` : "No public entry yet";
+        slot.textContent = row ? `${row.maskedWalletAddress} · ${row.entries} entries · verified` : "No verified contest entry yet";
       });
     }
 
@@ -953,7 +1008,7 @@
     });
     $("#viewLeaderboardBtn").addEventListener("click", () => {
       window.location.hash = "leaderboard";
-      window.dispatchEvent(new CustomEvent("trench:bot-question", { detail: "leaderboard" }));
+      loadDashboard();
     });
 
     document.querySelectorAll("[data-bot-question]").forEach((button) => {

@@ -8,6 +8,12 @@ const migrations = [
     const columns = db.prepare("PRAGMA table_info(referrals)").all().map((row) => row.name);
     if (!columns.includes("verified_at")) db.exec("ALTER TABLE referrals ADD COLUMN verified_at TEXT");
   }]
+  ,[5, "contest-wallet-tracking", () => {
+    const columns = db.prepare("PRAGMA table_info(wallet_challenges)").all().map((row) => row.name);
+    if (!columns.includes("verification_result")) db.exec("ALTER TABLE wallet_challenges ADD COLUMN verification_result TEXT");
+    if (!columns.includes("challenge_hash")) db.exec("ALTER TABLE wallet_challenges ADD COLUMN challenge_hash TEXT");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_contest_wallet_rank_v5 ON contest_wallets(contest_id, eligibility_status, disqualified, entry_count DESC, last_ownership_verified_at ASC)");
+  }]
 ];
 const apply = db.transaction(() => {
   for (const [version, name, run] of migrations) {

@@ -13,7 +13,8 @@
     "backup": "node scripts/backup.js",
     "restore:validate": "node scripts/restore-validate.js",
     "test": "node --test",
-    "check": "node --check src/index.js && node --check src/bot.js && node --check src/web/server.js"
+    "check": "node --check src/index.js && node --check src/bot.js && node --check src/web/server.js && node --check src/services/contest.js",
+    "release:check": "npm run config:check && npm run migrate && npm run migration:status && npm run check && npm test"
   },
   "dependencies": {
     "better-sqlite3": "^11.10.0",

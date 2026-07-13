@@ -3,7 +3,6 @@ import helmet from "helmet";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { OFFICIAL } from "../constants.js";
-import { getLeaderboard } from "../db/index.js";
 import { getMarketData } from "../services/marketData.js";
 import { tokenDashboardText } from "../utils/format.js";
 import { answerQuestion, widgetOptions } from "./knowledge.js";
@@ -14,14 +13,19 @@ import { db } from "../db/index.js";
 import { getIndexedHolderCount } from "../services/holders.js";
 import { getTelegramMemberCount } from "../services/telegram.js";
 import { getLiquidityVerification } from "../services/liquidity.js";
+import { checkContestWallet, contestPublicConfig, getContestLeaderboard, getContestStatus, verifyContestSession, safeAbuseIdentifier, recordRejectedContestEvent, listAdminContestRecords, getAdminWalletHistory, reviewContestWallet, toCsv } from "../services/contest.js";
+import { requireAdmin } from "../services/adminAuth.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.resolve(__dirname, "../../public");
 
-export function createServer() {
+export function createServer({ contestBalanceFetcher = getTrenchBalance } = {}) {
   const app = express();
   const challengeHits = new Map();
+  const contestHits = new Map();
+  const duplicateRequests = new Map();
   app.disable("x-powered-by");
+  app.set("trust proxy", 1);
   app.use(helmet({ contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], scriptSrc: ["'self'"], styleSrc: ["'self'", "'unsafe-inline'"], connectSrc: ["'self'", ...config.allowedOrigins], imgSrc: ["'self'", "data:", "https:"] } } }));
   app.use(express.json({ limit: "32kb" }));
   app.use((req, res, next) => {
@@ -29,8 +33,8 @@ export function createServer() {
     if (origin && config.allowedOrigins.includes(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Vary", "Origin");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-      res.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,Idempotency-Key");
+      res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
     }
     if (req.method === "OPTIONS") return res.sendStatus(204);
     next();
@@ -119,8 +123,49 @@ export function createServer() {
     });
   });
 
-  app.get("/api/leaderboard", (_req, res) => {
-    res.json({ leaderboard: getLeaderboard() });
+  app.get("/api/leaderboard", (req, res) => {
+    const limit = Math.min(Number(req.query.limit) || 25, 100);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    res.json({ contest: contestPublicConfig(), leaderboard: getContestLeaderboard({ limit, offset }) });
+  });
+
+  app.get("/api/contest/config", (_req, res) => res.json(contestPublicConfig()));
+
+  function consumeRateLimit(req, walletAddress) {
+    const now = Date.now();
+    if (contestHits.size > 10000) contestHits.clear();
+    if (duplicateRequests.size > 10000) duplicateRequests.clear();
+    const abuseIdentifier = safeAbuseIdentifier(req.ip || "unknown") || "unavailable";
+    const checks = [[`ip:${abuseIdentifier}`, config.contestRateLimitPerIp], [`wallet:${walletAddress}`, config.contestRateLimitPerWallet]];
+    for (const [key, max] of checks) {
+      const recent = (contestHits.get(key) || []).filter((time) => now - time < config.contestRateLimitWindowMs);
+      if (recent.length >= max) return { allowed: false, abuseIdentifier };
+      recent.push(now); contestHits.set(key, recent);
+    }
+    const idempotencyKey = String(req.headers["idempotency-key"] || `${walletAddress}:${req.path}`);
+    const duplicateKey = `${abuseIdentifier}:${idempotencyKey}`;
+    const previous = duplicateRequests.get(duplicateKey);
+    duplicateRequests.set(duplicateKey, now);
+    return { allowed: true, duplicate: previous && now - previous < 3000, abuseIdentifier };
+  }
+
+  app.post("/api/contest/check", async (req, res) => {
+    const walletAddress = String(req.body?.walletAddress || "").trim();
+    if (!isValidSolanaAddress(walletAddress)) {
+      recordRejectedContestEvent({ walletAddress, failureCategory: "invalid_wallet", abuseIdentifier: safeAbuseIdentifier(req.ip) });
+      return res.status(400).json({ error: "invalid_wallet" });
+    }
+    const limit = consumeRateLimit(req, walletAddress);
+    if (!limit.allowed) {
+      recordRejectedContestEvent({ walletAddress, failureCategory: "rate_limited", abuseIdentifier: limit.abuseIdentifier, rateLimitResult: "blocked" });
+      return res.status(429).json({ error: "rate_limited" });
+    }
+    if (limit.duplicate) {
+      recordRejectedContestEvent({ walletAddress, failureCategory: "duplicate_request", abuseIdentifier: limit.abuseIdentifier });
+      return res.status(409).json({ error: "duplicate_request" });
+    }
+    const result = await checkContestWallet({ walletAddress, method: "public_lookup", ownershipVerified: false, balanceFetcher: contestBalanceFetcher, abuseIdentifier: limit.abuseIdentifier });
+    return res.status(result.statusCode || 200).json(result);
   });
 
   app.post("/api/wallet/challenge", (req, res) => {
@@ -139,13 +184,40 @@ export function createServer() {
     const challengeId = String(req.body?.challengeId || "");
     const signature = String(req.body?.signature || "");
     if (!challengeId || !signature) return res.status(400).json({ error: "missing_challenge_or_signature" });
-    const result = await completeWalletChallenge({ challengeId, signature });
+    const result = await completeWalletChallenge({ challengeId, signature, abuseIdentifier: safeAbuseIdentifier(req.ip) });
     return res.status(result.error ? 400 : 200).json({ ...result, explorer: result.walletAddress ? explorerAddressUrl(result.walletAddress) : undefined });
   });
 
+  app.get("/api/contest/me", (req, res) => {
+    const token = String(req.headers.authorization || "").replace(/^Bearer /, "");
+    const session = verifyContestSession(token);
+    if (!session) return res.status(401).json({ error: "ownership_session_required" });
+    const status = getContestStatus(session.walletAddress, { includeRank: true });
+    return status ? res.json(status) : res.status(404).json({ error: "contest_record_not_found" });
+  });
+
+  app.get("/api/admin/contest/records", requireAdmin, (req, res) => {
+    res.json({ records: listAdminContestRecords(req.query) });
+  });
+  app.get("/api/admin/contest/wallet/:address/history", requireAdmin, (req, res) => {
+    if (!isValidSolanaAddress(req.params.address)) return res.status(400).json({ error: "invalid_wallet" });
+    res.json({ events: getAdminWalletHistory(req.params.address, req.query.limit) });
+  });
+  app.patch("/api/admin/contest/wallet/:address/review", requireAdmin, (req, res) => {
+    if (!isValidSolanaAddress(req.params.address)) return res.status(400).json({ error: "invalid_wallet" });
+    const result = reviewContestWallet(req.params.address, { action: req.body?.action, reason: req.body?.reason });
+    return res.status(result.error === "not_found" ? 404 : result.error ? 400 : 200).json(result);
+  });
+  app.get("/api/admin/contest/export/:kind", requireAdmin, (req, res) => {
+    let rows;
+    if (req.params.kind === "records") rows = db.prepare("SELECT * FROM contest_wallets WHERE contest_id=? ORDER BY updated_at DESC").all(config.contest.id);
+    else if (req.params.kind === "events") rows = db.prepare("SELECT * FROM contest_check_events WHERE contest_id=? ORDER BY checked_at DESC").all(config.contest.id);
+    else return res.status(404).json({ error: "export_not_found" });
+    res.type("text/csv").set("Content-Disposition", `attachment; filename=contest-${req.params.kind}.csv`).send(toCsv(rows));
+  });
+
   app.get("/api/wallet/:address/balance", async (req, res) => {
-    const result = await getTrenchBalance(req.params.address);
-    return res.status(result.status === "invalid_wallet" ? 400 : result.status === "rpc_unavailable" ? 503 : 200).json(result);
+    return res.status(410).json({ error: "wallet_check_moved", method: "POST", endpoint: "/api/contest/check" });
   });
 
   app.get("/api/status", (_req, res) => res.json({
@@ -153,6 +225,7 @@ export function createServer() {
     mint: config.trenchMint || OFFICIAL.ca,
     walletVerification: "live",
     balanceVerification: "live",
+    contest: contestPublicConfig(),
     staking: config.solanaCluster === "devnet" ? "devnet-preview" : "preview",
     financialDistributions: "manual-approval-required"
   }));

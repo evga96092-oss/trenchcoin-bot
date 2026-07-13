@@ -38,19 +38,30 @@ export function verifyWalletSignature(address, message, signatureBase58) {
 }
 
 async function rpc(method, params) {
-  const response = await fetch(config.solanaRpcUrl, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: crypto.randomUUID(), method, params }),
-    signal: AbortSignal.timeout(7000)
-  });
-  if (!response.ok) throw new Error(`Solana RPC HTTP ${response.status}`);
-  const payload = await response.json();
-  if (payload.error) throw new Error(`Solana RPC: ${payload.error.message || "unknown error"}`);
-  return payload.result;
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(config.solanaRpcUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: crypto.randomUUID(), method, params }),
+        signal: AbortSignal.timeout(config.integrationTimeoutMs)
+      });
+      if (response.status === 429) { const error = new Error("Solana RPC HTTP 429"); error.category = "rpc_rate_limited"; throw error; }
+      if (!response.ok) { const error = new Error(`Solana RPC HTTP ${response.status}`); error.category = "rpc_unavailable"; throw error; }
+      const payload = await response.json();
+      if (payload.error) { const error = new Error(`Solana RPC: ${payload.error.message || "unknown error"}`); error.category = "rpc_unavailable"; throw error; }
+      return payload.result;
+    } catch (error) {
+      if (error.name === "TimeoutError" || error.name === "AbortError") error.category = "rpc_timeout";
+      lastError = error;
+      if (attempt === 0 && error.category !== "rpc_rate_limited") continue;
+    }
+  }
+  throw lastError;
 }
 
-function rawToUiAmount(raw, decimals) {
+export function rawToUiAmount(raw, decimals) {
   const places = decimals ?? 0;
   const base = 10n ** BigInt(places);
   const whole = raw / base;
@@ -73,9 +84,9 @@ export async function getTrenchBalance(walletAddress) {
       decimals = amount.decimals;
     }
     const places = decimals ?? 6;
-    return { status: raw === 0n ? "zero_balance" : "verified", balanceRaw: raw.toString(), balanceUi: rawToUiAmount(raw, places), decimals: places, slot: result.context?.slot ?? null, mint, cluster: config.solanaCluster };
+    return { status: raw === 0n ? "zero_balance" : "verified", balanceRaw: raw.toString(), balanceUi: rawToUiAmount(raw, places), decimals: places, slot: result.context?.slot ?? null, mint, cluster: config.solanaCluster, provider: "Solana RPC", checkedAt: new Date().toISOString() };
   } catch (error) {
-    return { status: "rpc_unavailable", error: error.message, mint, cluster: config.solanaCluster };
+    return { status: error.category || "rpc_unavailable", failureCategory: error.category || "rpc_unavailable", error: error.message, mint, cluster: config.solanaCluster, provider: "Solana RPC", checkedAt: new Date().toISOString() };
   }
 }
 

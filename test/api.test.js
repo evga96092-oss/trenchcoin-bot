@@ -22,7 +22,7 @@ test("public API rejects malformed wallets and keeps leaderboard identifiers pri
     const leaderboard = await (await fetch(`${base}/api/leaderboard`)).json();
     const serialized = JSON.stringify(leaderboard);
     assert.equal(serialized.includes("123456789"), false);
-    assert.match(serialized, /Trencher-/);
+    assert.deepEqual(leaderboard.leaderboard, [], "unverified Telegram users are excluded from the official contest leaderboard");
     const status = await (await fetch(`${base}/api/status`)).json();
     assert.equal(status.staking.includes("preview"), true);
   } finally { await new Promise((resolve) => server.close(resolve)); }

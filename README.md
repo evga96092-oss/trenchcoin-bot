@@ -15,6 +15,8 @@ Launch-focused bot/backend for `$TRENCH`. Wallet ownership is verified through a
 - Idempotent XP audit events and privacy-safe leaderboards
 - Website chatbot widget with fixed official knowledge
 - API endpoints for links, widget answers, token dashboard, health, and leaderboard
+- Production contest check-ins with raw-integer entry calculation, signed ownership proof, append-only audit events, and a verified-wallet leaderboard
+- Protected contest administration, wallet review, and CSV reporting APIs
 
 ## Official links
 
@@ -165,6 +167,16 @@ Liquidity pool addresses are discovered live through DexScreener, but discovery 
 Staking is not production-ready. The repository contains a devnet program ID reference but no staking program source, IDL, authority specification, instruction builder, audit, or end-to-end tests. Do not enable mainnet staking controls until those artifacts are supplied and independently verified.
 
 See [SPECIFICATION.md](SPECIFICATION.md) and [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
+
+## Contest API and operations
+
+- `GET /api/contest/config` — public contest configuration and open/closed state
+- `POST /api/contest/check` — pasted-address public lookup; ownership remains unverified
+- `POST /api/wallet/challenge` and `POST /api/wallet/verify` — connected-wallet ownership proof
+- `GET /api/contest/me` — signed-session status and current rank for the verified owner
+- `GET /api/leaderboard` — masked, ownership-verified official contest rankings
+
+Contest entries are calculated only on the backend from base units: `min(10, floor(rawBalance / (1_000_000 × 10^decimals)))`. Repeated checks update the wallet's current record and add audit events; they never stack entries. See [CONTEST.md](CONTEST.md) and [ADMIN.md](ADMIN.md).
 
 ## Safety Rules
 

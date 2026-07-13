@@ -9,6 +9,12 @@ const parseAdminIds = (value = "") =>
       .filter(Boolean)
   );
 
+const parseOptionalDate = (value = "") => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
+};
+
 export const config = {
   nodeEnv: process.env.NODE_ENV || "development",
   appEnv: process.env.APP_ENV || "local",
@@ -38,11 +44,32 @@ export const config = {
   stakingEnabled: process.env.STAKING_ENABLED === "true",
   walletLinkingEnabled: process.env.WALLET_LINKING_ENABLED !== "false",
   telegramEnabled: process.env.TELEGRAM_ENABLED !== "false",
-  logLevel: process.env.LOG_LEVEL || "info"
+  logLevel: process.env.LOG_LEVEL || "info",
+  contest: Object.freeze({
+    id: process.env.CONTEST_ID || "trench-holdings-contest",
+    name: process.env.CONTEST_NAME || "$TRENCH Holdings Contest",
+    startAt: parseOptionalDate(process.env.CONTEST_START_AT),
+    endAt: parseOptionalDate(process.env.CONTEST_END_AT),
+    checkinsOpen: process.env.CONTEST_CHECKINS_OPEN === "true",
+    tokenMint: process.env.CONTEST_TOKEN_MINT || process.env.TRENCH_MINT || "H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump",
+    tokensPerEntry: process.env.CONTEST_TOKENS_PER_ENTRY || "1000000",
+    maxEntries: Number(process.env.CONTEST_MAX_ENTRIES || 10),
+    ownershipRequired: process.env.CONTEST_OWNERSHIP_REQUIRED !== "false",
+    leaderboardPublic: process.env.CONTEST_LEADERBOARD_PUBLIC !== "false",
+    maskWallets: process.env.CONTEST_MASK_WALLETS !== "false"
+  }),
+  adminApiToken: process.env.ADMIN_API_TOKEN || "",
+  contestSessionSecret: process.env.CONTEST_SESSION_SECRET || "",
+  abuseHashSecret: process.env.ABUSE_HASH_SECRET || "",
+  contestRateLimitWindowMs: Number(process.env.CONTEST_RATE_LIMIT_WINDOW_MS || 60000),
+  contestRateLimitPerIp: Number(process.env.CONTEST_RATE_LIMIT_PER_IP || 12),
+  contestRateLimitPerWallet: Number(process.env.CONTEST_RATE_LIMIT_PER_WALLET || 6),
+  abuseHashRetentionDays: Number(process.env.ABUSE_HASH_RETENTION_DAYS || 30)
 };
 
 export function validateConfig(candidate = config) {
   const errors = [];
+  const contest = candidate.contest || config.contest;
   const environments = new Set(["local", "test", "devnet", "staging", "production"]);
   if (!environments.has(candidate.appEnv)) errors.push("APP_ENV must be local, test, devnet, staging, or production");
   for (const [name, value] of [["PUBLIC_APP_URL", candidate.publicAppUrl], ["BACKEND_PUBLIC_URL", candidate.publicBaseUrl]]) {
@@ -73,6 +100,19 @@ export function validateConfig(candidate = config) {
   if (candidate.stakingEnabled) {
     errors.push("STAKING_ENABLED cannot be true: recovered source has no verified deployed program or IDL");
   }
+  if (!validSolanaKey(contest.tokenMint)) errors.push("CONTEST_TOKEN_MINT must be a valid Solana public key");
+  if (contest.tokenMint !== candidate.trenchMint) errors.push("CONTEST_TOKEN_MINT must match the official TRENCH_MINT");
+  if (!/^\d+$/.test(contest.tokensPerEntry) || BigInt(contest.tokensPerEntry) <= 0n) errors.push("CONTEST_TOKENS_PER_ENTRY must be a positive whole-token integer");
+  if (!Number.isInteger(contest.maxEntries) || contest.maxEntries < 1 || contest.maxEntries > 100) errors.push("CONTEST_MAX_ENTRIES must be an integer from 1 through 100");
+  if (contest.startAt && Number.isNaN(new Date(contest.startAt).getTime())) errors.push("CONTEST_START_AT must be an ISO timestamp");
+  if (contest.endAt && Number.isNaN(new Date(contest.endAt).getTime())) errors.push("CONTEST_END_AT must be an ISO timestamp");
+  if (contest.startAt && contest.endAt && new Date(contest.startAt) >= new Date(contest.endAt)) errors.push("CONTEST_END_AT must be after CONTEST_START_AT");
+  if (candidate.appEnv === "production" && contest.checkinsOpen) {
+    if (!contest.startAt || !contest.endAt) errors.push("Open production contests require CONTEST_START_AT and CONTEST_END_AT");
+    if (!(candidate.contestSessionSecret || config.contestSessionSecret) || (candidate.contestSessionSecret || config.contestSessionSecret).length < 32) errors.push("Open production contests require CONTEST_SESSION_SECRET with at least 32 characters");
+    if (!(candidate.abuseHashSecret || config.abuseHashSecret) || (candidate.abuseHashSecret || config.abuseHashSecret).length < 32) errors.push("Open production contests require ABUSE_HASH_SECRET with at least 32 characters");
+  }
+  if (candidate.appEnv === "production" && candidate.adminApiToken && candidate.adminApiToken.length < 32) errors.push("ADMIN_API_TOKEN must contain at least 32 characters in production");
   return errors;
 }
 
