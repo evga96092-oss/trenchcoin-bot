@@ -463,13 +463,19 @@
       <section class="stack">
         <article class="panel" id="wallet-panel">
           <h2 class="green">Wallet Check</h2>
-          <p class="muted">Connect Phantom to prove ownership with a free message signature, or paste an address for an ownership-unverified public lookup. No transaction or token approval is requested.</p>
+          <p class="muted">Connect a compatible Solana wallet to prove ownership with a free message signature, or paste an address for an ownership-unverified public lookup. No transaction or token approval is requested.</p>
           <div class="wallet-row">
-            <input id="walletInput" class="field" autocomplete="off" spellcheck="false" placeholder="Paste wallet address">
+            <select id="walletSelect" class="field" aria-label="Detected Solana wallet" disabled>
+              <option>Detecting compatible wallets...</option>
+            </select>
             <button id="connectBtn" class="copy" type="button">Connect &amp; Verify</button>
           </div>
-          <div class="inline-row" style="margin-top:9px">
+          <div class="wallet-row" style="margin-top:9px">
+            <input id="walletInput" class="field" autocomplete="off" spellcheck="false" placeholder="Paste wallet address">
             <button id="checkBtn" class="btn gold" type="button">Public Lookup</button>
+          </div>
+          <div class="inline-row" style="margin-top:9px">
+            <span class="muted">Wallet Standard auto-discovery</span>
             <span id="walletState" class="warn">Disconnected</span>
           </div>
           <div class="mini-grid" style="margin-top:14px">
@@ -648,7 +654,12 @@
   </div>
 
   <script type="module">
+    import { getWallets } from "./wallet-standard-app.js";
+
     const MINT = "H57tU3NiERFgfok2Z2iJrgdjh2h12e6bMJwe7HANpump";
+    const SOLANA_MAINNET = "solana:mainnet";
+    const STANDARD_CONNECT = "standard:connect";
+    const SOLANA_SIGN_MESSAGE = "solana:signMessage";
     const tiers = [
       { name: "Trench Legend", min: 5_000_000, weight: "10 entries max" },
       { name: "Commander", min: 1_000_000, weight: "6 entries" },
@@ -656,6 +667,8 @@
       { name: "Scout", min: 100_000, weight: "1 entry" }
     ];
     const $ = (selector) => document.querySelector(selector);
+    const walletSelect = $("#walletSelect");
+    const connectBtn = $("#connectBtn");
     const walletInput = $("#walletInput");
     const walletState = $("#walletState");
     const walletStatus = $("#walletStatus");
@@ -695,7 +708,8 @@
     const leader3 = $("#leader3");
     const supplyStatus = $("#supplyStatus");
     const navLinks = Array.from(document.querySelectorAll(".nav a"));
-    let connectedProvider = null;
+    const walletRegistry = getWallets();
+    let compatibleWallets = [];
 
     function compactAddress(address) {
       return `${address.slice(0, 4)}...${address.slice(-4)}`;
@@ -732,6 +746,52 @@
 
     function isLikelySolanaAddress(address) {
       return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
+    }
+
+    function supportsOwnershipVerification(wallet) {
+      return Boolean(
+        wallet?.features?.[STANDARD_CONNECT]?.connect &&
+        wallet?.features?.[SOLANA_SIGN_MESSAGE]?.signMessage
+      );
+    }
+
+    function refreshWalletOptions() {
+      const priorWallet = compatibleWallets[Number(walletSelect.value)];
+      compatibleWallets = walletRegistry.get()
+        .filter(supportsOwnershipVerification)
+        .sort((left, right) => left.name.localeCompare(right.name));
+      walletSelect.replaceChildren();
+
+      if (!compatibleWallets.length) {
+        walletSelect.add(new Option("No compatible signing wallet detected", ""));
+        walletSelect.disabled = true;
+        connectBtn.disabled = true;
+        if (["Disconnected", "Detecting wallets", "No signing wallet"].includes(walletState.textContent)) {
+          walletState.textContent = "No signing wallet";
+          walletState.className = "warn";
+        }
+        return;
+      }
+
+      compatibleWallets.forEach((wallet, index) => walletSelect.add(new Option(wallet.name, String(index))));
+      const priorIndex = compatibleWallets.indexOf(priorWallet);
+      walletSelect.value = String(priorIndex >= 0 ? priorIndex : 0);
+      walletSelect.disabled = false;
+      connectBtn.disabled = false;
+      if (["Disconnected", "Detecting wallets", "No signing wallet"].includes(walletState.textContent)) {
+        walletState.textContent = `${compatibleWallets.length} wallet${compatibleWallets.length === 1 ? "" : "s"} detected`;
+        walletState.className = "ok";
+      }
+    }
+
+    function walletError(status, message) {
+      const error = new Error(message);
+      error.status = status;
+      return error;
+    }
+
+    function isWalletCancellation(error) {
+      return error?.code === 4001 || /cancel|declin|denied|reject/i.test(error?.message || "");
     }
 
     async function fetchJson(path) {
@@ -791,6 +851,7 @@
       updateStakePanel(result.walletAddress, Number(result.balanceUi));
       if (stale) checkerNote.textContent = "The live RPC request failed. The last successful balance is shown and clearly marked stale; entries were not reduced.";
       else if (result.entries === 0) checkerNote.textContent = `You need ${formatTokenBalance(result.tokensPerEntry)} $TRENCH for your first contest entry. A pasted address is not proof of ownership.`;
+      else if (result.ownershipStatus !== "ownership_verified") checkerNote.textContent = `This balance qualifies for ${result.entries} of ${result.maxEntries} entries, but prize eligibility requires a signed ownership verification from a compatible wallet.`;
       else if (result.entries >= result.maxEntries) checkerNote.textContent = `You have reached the maximum of ${result.maxEntries} contest entries.`;
       else {
         const balanceLabel = result.ownershipStatus === "ownership_verified" ? "Your verified balance" : "The live on-chain balance";
@@ -809,9 +870,13 @@
         contest_closed: "Contest check-ins are currently closed or awaiting official dates.",
         invalid_signature: "The ownership signature was invalid. Request a new verification message.",
         challenge_expired: "The verification message expired. Connect again for a new one.",
-        challenge_replayed: "That verification message was already used. Connect again for a new one."
+        challenge_replayed: "That verification message was already used. Connect again for a new one.",
+        no_wallet_detected: "No compatible Solana signing wallet was detected. Install or unlock a Wallet Standard wallet, then refresh.",
+        wallet_no_solana_account: "The selected wallet did not expose a Solana mainnet account that can sign messages.",
+        wallet_cannot_sign: "The selected wallet could not sign the ownership message. Try another compatible wallet.",
+        wallet_error: "The wallet could not complete ownership verification. Unlock it and try again."
       };
-      walletState.textContent = error.status === "rate_limited" ? "Rate limited" : error.status === "contest_closed" ? "Contest closed" : "Check failed";
+      walletState.textContent = String(error.status || "").startsWith("wallet") || error.status === "no_wallet_detected" ? "Wallet unavailable" : error.status === "rate_limited" ? "Rate limited" : error.status === "contest_closed" ? "Contest closed" : "Check failed";
       walletState.className = "bad";
       checkerNote.textContent = messages[error.status] || "The server could not complete the check. Try again later.";
     }
@@ -825,21 +890,25 @@
     }
 
     async function connectWallet() {
-      const provider = window.phantom?.solana?.isPhantom ? window.phantom.solana : window.solana;
-      if (!provider?.isPhantom) {
-        walletState.textContent = "Phantom unavailable";
-        walletState.className = "bad";
-        return;
-      }
       try {
-        connectedProvider = provider;
-        const result = await provider.connect({ onlyIfTrusted: false });
-        const address = result.publicKey.toString();
+        const wallet = compatibleWallets[Number(walletSelect.value)];
+        if (!wallet) throw walletError("no_wallet_detected", "No compatible wallet selected");
+        const connectResult = await wallet.features[STANDARD_CONNECT].connect();
+        const accounts = connectResult?.accounts?.length ? connectResult.accounts : wallet.accounts;
+        const account = accounts.find((candidate) =>
+          candidate.chains?.includes(SOLANA_MAINNET) && candidate.features?.includes(SOLANA_SIGN_MESSAGE)
+        );
+        if (!account) throw walletError("wallet_no_solana_account", "No signable Solana mainnet account");
+
+        const address = account.address;
         walletInput.value = address;
         setChecking(address);
-        checkerNote.textContent = "Approve the free message signature in Phantom. It is not a transaction and cannot spend funds.";
+        checkerNote.textContent = `Approve the free message signature in ${wallet.name}. It is not a transaction and cannot spend funds.`;
         const challenge = await requestJson("/api/wallet/challenge", { method: "POST", body: JSON.stringify({ walletAddress: address }) });
-        const signed = await provider.signMessage(new TextEncoder().encode(challenge.message), "utf8");
+        const message = new TextEncoder().encode(challenge.message);
+        const signedMessages = await wallet.features[SOLANA_SIGN_MESSAGE].signMessage({ account, message });
+        const signed = signedMessages?.[0];
+        if (!signed?.signature) throw walletError("wallet_cannot_sign", "Wallet returned no message signature");
         const signature = encodeBase58(signed.signature);
         const verified = await requestJson("/api/wallet/verify", { method: "POST", body: JSON.stringify({ challengeId: challenge.challengeId, signature }) });
         if (verified.contest?.error) { const error = new Error(verified.contest.error); error.status = verified.contest.error; throw error; }
@@ -852,11 +921,14 @@
         }
       } catch (error) {
         console.error(error);
-        if (error?.code === 4001) {
+        if (isWalletCancellation(error)) {
           walletState.textContent = "Cancelled";
           walletState.className = "warn";
           checkerNote.textContent = "Wallet connection or message signing was cancelled. No transaction was requested.";
-        } else renderWalletError(error);
+        } else {
+          if (!error.status) error.status = "wallet_error";
+          renderWalletError(error);
+        }
       }
     }
 
@@ -984,7 +1056,7 @@
       button.addEventListener("click", () => copyText(MINT, button));
     });
 
-    $("#connectBtn").addEventListener("click", connectWallet);
+    connectBtn.addEventListener("click", connectWallet);
     $("#checkBtn").addEventListener("click", async () => {
       const address = walletInput.value.trim();
       if (!address) {
@@ -1020,6 +1092,9 @@
       const active = window.location.hash || "#dashboard";
       navLinks.forEach((link) => link.classList.toggle("active", link.getAttribute("href") === active));
     });
+    walletRegistry.on("register", refreshWalletOptions);
+    walletRegistry.on("unregister", refreshWalletOptions);
+    refreshWalletOptions();
     loadDashboard();
   </script>
   <script src="/config.js"></script>

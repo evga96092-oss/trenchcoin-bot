@@ -40,7 +40,7 @@ export function answerQuestion(input = "") {
   }
 
   if (question.includes("wallet")) {
-    return "Wallet Check is read-only. Connect Phantom or paste a public Solana address on the dashboard to read public $TRENCH balance. It does not request a spending transaction.";
+    return "Wallet Check is read-only. Connect a compatible Solana Wallet Standard wallet for signed ownership verification, or paste a public address for a balance-only lookup. It does not request a spending transaction.";
   }
 
   if (question.includes("market") || question.includes("price")) {

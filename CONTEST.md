@@ -9,7 +9,7 @@ The backend calculates `min(maxEntries, rawBalance / (tokensPerEntry × 10^token
 ## Verification levels
 
 - `public_lookup`: a pasted public address is checked and audited but does not prove ownership and is excluded from prize eligibility and the official leaderboard.
-- `ownership_verified`: Phantom signs a short-lived, single-use human-readable message. The backend verifies Ed25519 ownership. Signing is free and does not authorize a transaction, token access, or spending.
+- `ownership_verified`: a compatible Solana Wallet Standard wallet signs a short-lived, single-use human-readable message. The backend verifies Ed25519 ownership. Signing is free and does not authorize a transaction, token access, or spending.
 
 The returned 15-minute signed contest session allows the owner to request `/api/contest/me` and their current rank. It is not a wallet secret and grants no blockchain permissions.
 
